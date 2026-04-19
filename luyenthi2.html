@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Luyện thi Đại số tuyến tính</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#f5f5f0;color:#1a1a1a;font-size:15px}
+.app{max-width:900px;margin:0 auto;padding:1rem}
+.screen{display:none}.screen.active{display:block}
+.card{background:#fff;border:1px solid #e0e0d8;border-radius:12px;padding:1.25rem;margin-bottom:1rem}
+h1{font-size:22px;font-weight:600}
+h2{font-size:18px;font-weight:600;margin-bottom:0.75rem}
+h3{font-size:16px;font-weight:600;margin-bottom:0.5rem}
+.muted{font-size:13px;color:#666}
+.badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:6px;font-weight:600}
+.badge-nb{background:#dbeafe;color:#1e40af}
+.badge-th{background:#dcfce7;color:#166534}
+.badge-vd{background:#fef3c7;color:#92400e}
+.badge-vdc{background:#fee2e2;color:#991b1b}
+.btn{display:inline-block;padding:8px 18px;border-radius:8px;border:1px solid #ccc;background:#fff;cursor:pointer;font-size:14px;color:#1a1a1a;transition:all 0.15s;font-family:inherit}
+.btn:hover{background:#f0f0ea}
+.btn-primary{background:#1d4ed8;color:#fff;border-color:#1d4ed8}
+.btn-primary:hover{background:#1e40af}
+.btn-danger{background:#dc2626;color:#fff;border-color:#dc2626}
+.btn-danger:hover{background:#b91c1c}
+.exam-card{background:#fff;border:1px solid #e0e0d8;border-radius:12px;padding:1rem;margin-bottom:10px}
+.option-btn{width:100%;text-align:left;padding:10px 14px;border-radius:8px;border:1px solid #d1d5db;background:#fff;cursor:pointer;font-size:14px;color:#1a1a1a;margin:4px 0;transition:all 0.15s;font-family:inherit;line-height:1.5}
+.option-btn:hover:not(:disabled){background:#f0f4ff;border-color:#93c5fd}
+.option-btn.selected{border-color:#1d4ed8;background:#eff6ff;color:#1e40af}
+.option-btn.correct{border-color:#16a34a;background:#f0fdf4;color:#14532d;font-weight:600}
+.option-btn.wrong{border-color:#dc2626;background:#fef2f2;color:#991b1b}
+.option-btn:disabled{cursor:default}
+.progress-bar{height:6px;background:#e5e7eb;border-radius:3px;overflow:hidden;margin:8px 0}
+.progress-fill{height:100%;background:#1d4ed8;border-radius:3px;transition:width 0.3s}
+.stat-card{background:#f9f9f5;border-radius:8px;padding:1rem;text-align:center;border:1px solid #e5e5e0}
+.stat-num{font-size:28px;font-weight:700;margin-top:4px}
+.solution{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:1rem;margin-top:10px;font-size:14px;line-height:1.7;display:none}
+.solution.show{display:block}
+.q-nav-btn{width:34px;height:34px;border-radius:6px;border:1px solid #d1d5db;background:#fff;cursor:pointer;font-size:12px;font-weight:600;color:#666}
+.q-nav-btn.answered{background:#1d4ed8;color:#fff;border-color:#1d4ed8}
+.q-nav-btn.current{border-color:#1d4ed8;color:#1d4ed8;border-width:2px}
+.q-nav-btn.correct-nav{background:#16a34a;color:#fff;border-color:#16a34a}
+.q-nav-btn.wrong-nav{background:#dc2626;color:#fff;border-color:#dc2626}
+.tab-btn{padding:8px 16px;border:none;background:transparent;cursor:pointer;font-size:14px;color:#666;border-bottom:2px solid transparent;font-family:inherit}
+.tab-btn.active{color:#1d4ed8;border-bottom-color:#1d4ed8}
+.detail-row{padding:10px 0;border-bottom:1px solid #f0f0ea;cursor:pointer}
+.detail-row:hover{background:#fafaf5}
+.detail-row:last-child{border-bottom:none}
+.timer{font-size:22px;font-weight:700;color:#1d4ed8;font-variant-numeric:tabular-nums}
+.timer.warn{color:#dc2626}
+.header-bar{background:#fff;border-bottom:1px solid #e0e0d8;padding:0.75rem 1rem;margin-bottom:1rem;border-radius:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- HOME -->
+<div id="home" class="screen active">
+  <div style="text-align:center;padding:2rem 0 1.5rem">
+    <h1>📐 Luyện thi Đại số tuyến tính</h1>
+    <p class="muted" style="margin-top:8px">Đại học chính quy · 40 câu / đề · 60 phút · 10 đề luyện tập</p>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <h3 style="margin-bottom:10px">Ma trận đề thi</h3>
+    <div style="overflow-x:auto">
+    <table style="width:100%;font-size:13px;border-collapse:collapse">
+      <thead><tr style="background:#f5f5f0">
+        <th style="padding:7px 10px;text-align:left;border:1px solid #e0e0d8;min-width:200px">Nhóm câu hỏi</th>
+        <th style="padding:7px;text-align:center;border:1px solid #e0e0d8"><span class="badge badge-nb">NB</span></th>
+        <th style="padding:7px;text-align:center;border:1px solid #e0e0d8"><span class="badge badge-th">TH</span></th>
+        <th style="padding:7px;text-align:center;border:1px solid #e0e0d8"><span class="badge badge-vd">VD</span></th>
+        <th style="padding:7px;text-align:center;border:1px solid #e0e0d8"><span class="badge badge-vdc">VDC</span></th>
+        <th style="padding:7px;text-align:center;border:1px solid #e0e0d8">Tổng</th>
+      </tr></thead>
+      <tbody>
+        <tr><td style="padding:6px 10px;border:1px solid #e0e0d8">1.1 Số phức</td><td style="text-align:center;border:1px solid #e0e0d8">4</td><td style="text-align:center;border:1px solid #e0e0d8">-</td><td style="text-align:center;border:1px solid #e0e0d8">-</td><td style="text-align:center;border:1px solid #e0e0d8">-</td><td style="text-align:center;border:1px solid #e0e0d8;font-weight:600">4</td></tr>
+        <tr style="background:#fafaf5"><td style="padding:6px 10px;border:1px solid #e0e0d8">1.2 Ma trận, định thức</td><td style="text-align:center;border:1px solid #e0e0d8">3</td><td style="text-align:center;border:1px solid #e0e0d8">3</td><td style="text-align:center;border:1px solid #e0e0d8">1</td><td style="text-align:center;border:1px solid #e0e0d8">1</td><td style="text-align:center;border:1px solid #e0e0d8;font-weight:600">8</td></tr>
+        <tr><td style="padding:6px 10px;border:1px solid #e0e0d8">1.3 Hệ phương trình tuyến tính</td><td style="text-align:center;border:1px solid #e0e0d8">-</td><td style="text-align:center;border:1px solid #e0e0d8">1</td><td style="text-align:center;border:1px solid #e0e0d8">1</td><td style="text-align:center;border:1px solid #e0e0d8">1</td><td style="text-align:center;border:1px solid #e0e0d8;font-weight:600">3</td></tr>
+        <tr style="background:#fafaf5"><td style="padding:6px 10px;border:1px solid #e0e0d8">2.1 Không gian vectơ, độc lập tuyến tính</td><td style="text-align:center;border:1px solid #e0e0d8">2</td><td style="text-align:center;border:1px solid #e0e0d8">1</td><td style="text-align:center;border:1px solid #e0e0d8">2</td><td style="text-align:center;border:1px solid #e0e0d8">-</td><td style="text-align:center;border:1px solid #e0e0d8;font-weight:600">5</td></tr>
+        <tr><td style="padding:6px 10px;border:1px solid #e0e0d8">2.2 Cơ sở, số chiều, hạng</td><td style="text-align:center;border:1px solid #e0e0d8">4</td><td style="text-align:center;border:1px solid #e0e0d8">3</td><td style="text-align:center;border:1px solid #e0e0d8">1</td><td style="text-align:center;border:1px solid #e0e0d8">1</td><td style="text-align:center;border:1px solid #e0e0d8;font-weight:600">9</td></tr>
+        <tr style="background:#fafaf5"><td style="padding:6px 10px;border:1px solid #e0e0d8">3.1 Ánh xạ, trị riêng, chéo hóa</td><td style="text-align:center;border:1px solid #e0e0d8">3</td><td style="text-align:center;border:1px solid #e0e0d8">3</td><td style="text-align:center;border:1px solid #e0e0d8">2</td><td style="text-align:center;border:1px solid #e0e0d8">1</td><td style="text-align:center;border:1px solid #e0e0d8;font-weight:600">9</td></tr>
+        <tr><td style="padding:6px 10px;border:1px solid #e0e0d8">3.2 Dạng toàn phương, Euclide</td><td style="text-align:center;border:1px solid #e0e0d8">-</td><td style="text-align:center;border:1px solid #e0e0d8">1</td><td style="text-align:center;border:1px solid #e0e0d8">1</td><td style="text-align:center;border:1px solid #e0e0d8">-</td><td style="text-align:center;border:1px solid #e0e0d8;font-weight:600">2</td></tr>
+        <tr style="background:#1d4ed8;color:#fff"><td style="padding:7px 10px;border:1px solid #1e40af;font-weight:700">Tổng (40 câu)</td><td style="text-align:center;border:1px solid #1e40af;font-weight:700">16</td><td style="text-align:center;border:1px solid #1e40af;font-weight:700">12</td><td style="text-align:center;border:1px solid #1e40af;font-weight:700">8</td><td style="text-align:center;border:1px solid #1e40af;font-weight:700">4</td><td style="text-align:center;border:1px solid #1e40af;font-weight:700">40</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <h2>Chọn đề thi</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px" id="exam-list"></div>
+</div>
+
+<!-- EXAM -->
+<div id="exam" class="screen">
+  <div class="header-bar">
+    <div>
+      <h2 id="exam-title" style="margin:0">Đề 1</h2>
+      <p class="muted">40 câu · 60 phút</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="timer" id="timer-display">60:00</div>
+      <button class="btn btn-danger" onclick="submitExam()">Nộp bài</button>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:0.75rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <span class="muted" id="q-counter">Câu 1 / 40</span>
+      <span class="muted" id="q-answered">Đã trả lời: 0 / 40</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="q-progress" style="width:0%"></div></div>
+  </div>
+  <div class="card" id="question-card">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+      <span style="font-weight:600;color:#666" id="q-num">Câu 1</span>
+      <span class="badge" id="q-level">NB</span>
+      <span class="muted" id="q-topic"></span>
+    </div>
+    <p style="font-size:15px;line-height:1.7;margin-bottom:14px;font-weight:500" id="q-text"></p>
+    <div id="q-options"></div>
+    <div id="q-solution" class="solution"></div>
+  </div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;flex-wrap:wrap;gap:8px">
+    <button class="btn" onclick="prevQ()">← Câu trước</button>
+    <div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center;max-width:600px" id="q-nav"></div>
+    <button class="btn btn-primary" onclick="nextQ()">Câu tiếp →</button>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div id="result" class="screen">
+  <div class="header-bar">
+    <div>
+      <h2 id="result-title" style="margin:0">Kết quả</h2>
+      <p class="muted" id="result-sub"></p>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" onclick="reviewExam()">Xem lại bài</button>
+      <button class="btn" onclick="backHome()">Trang chủ</button>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:1rem">
+    <div class="stat-card"><div class="muted">Điểm số</div><div class="stat-num" id="s-score" style="color:#1d4ed8"></div><div class="muted">/10 điểm</div></div>
+    <div class="stat-card"><div class="muted">Câu đúng</div><div class="stat-num" id="s-correct" style="color:#16a34a"></div><div class="muted">/40 câu</div></div>
+    <div class="stat-card"><div class="muted">Câu sai</div><div class="stat-num" id="s-wrong" style="color:#dc2626"></div><div class="muted">/40 câu</div></div>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <div style="display:flex;gap:0;border-bottom:1px solid #e0e0d8;margin-bottom:1rem">
+      <button class="tab-btn active" onclick="switchTab('by-level')" id="tab-level">Theo cấp độ</button>
+      <button class="tab-btn" onclick="switchTab('by-topic')" id="tab-topic">Theo chủ đề</button>
+    </div>
+    <div id="by-level"></div>
+    <div id="by-topic" style="display:none"></div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-bottom:12px">Chi tiết từng câu <span class="muted" style="font-size:13px">(click để xem giải)</span></h3>
+    <div id="detail-list"></div>
+  </div>
+</div>
+
+<!-- REVIEW -->
+<div id="review" class="screen">
+  <div class="header-bar">
+    <h2 id="review-title" style="margin:0">Xem lại bài</h2>
+    <button class="btn" onclick="showScreen('result')">← Về kết quả</button>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:1rem" id="review-nav"></div>
+  <div class="card" id="review-card">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+      <span style="font-weight:600;color:#666" id="rv-num">Câu 1</span>
+      <span class="badge" id="rv-level">NB</span>
+      <span class="muted" id="rv-topic"></span>
+    </div>
+    <p style="font-size:15px;line-height:1.7;margin-bottom:14px;font-weight:500" id="rv-text"></p>
+    <div id="rv-options"></div>
+    <div class="solution show" id="rv-solution"></div>
+  </div>
+  <div style="display:flex;justify-content:space-between;margin-top:12px">
+    <button class="btn" onclick="prevRv()">← Câu trước</button>
+    <button class="btn btn-primary" onclick="nextRv()">Câu tiếp →</button>
+  </div>
+</div>
+
+</div>
+
+<script>
+const QB = {
+'1.1_NB':[
+  {q:'Phần thực của số phức z = 3 − 5i là:',opts:['A. −5','B. 3','C. 5','D. −3'],ans:1,sol:'Số phức z = a + bi có phần thực là a. Với z = 3 − 5i thì a = 3.'},
+  {q:'Phần ảo của số phức z = −2 + 7i là:',opts:['A. −2','B. −7','C. 7','D. 2'],ans:2,sol:'Phần ảo của z = a + bi là b. Với z = −2 + 7i thì b = 7.'},
+  {q:'Môđun của số phức z = 3 + 4i bằng:',opts:['A. 7','B. 5','C. 1','D. 25'],ans:1,sol:'|z| = √(3² + 4²) = √(9 + 16) = √25 = 5.'},
+  {q:'Số phức liên hợp của z = 2 − 3i là:',opts:['A. −2 + 3i','B. 2 + 3i','C. −2 − 3i','D. 3 − 2i'],ans:1,sol:'Liên hợp đổi dấu phần ảo: z̄ = 2 + 3i.'},
+  {q:'i² bằng:',opts:['A. 1','B. i','C. −1','D. −i'],ans:2,sol:'Theo định nghĩa đơn vị ảo: i² = −1.'},
+  {q:'(1 + i)² bằng:',opts:['A. 2','B. 1 + 2i','C. 2i','D. −2'],ans:2,sol:'(1+i)² = 1 + 2i + i² = 1 + 2i − 1 = 2i.'},
+  {q:'Số phức z = 5i có phần thực bằng:',opts:['A. 5','B. 0','C. −5','D. 1'],ans:1,sol:'z = 0 + 5i nên phần thực bằng 0.'},
+  {q:'Nghiệm phức của x² + 4 = 0 là:',opts:['A. x = ±2','B. x = ±2i','C. x = ±4i','D. Vô nghiệm'],ans:1,sol:'x² = −4 → x = ±√(−4) = ±2i.'},
+  {q:'(2 + i)(2 − i) bằng:',opts:['A. 3','B. 5','C. 4 + i','D. 4 − i'],ans:1,sol:'(2+i)(2−i) = 4 − i² = 4 − (−1) = 5.'},
+  {q:'Trong dạng lượng giác, môđun của z = −1 + i là:',opts:['A. 1','B. √2','C. 2','D. √3'],ans:1,sol:'|z| = √(1² + 1²) = √2.'},
+],
+'1.2_NB':[
+  {q:'Ma trận A cấp m×n có bao nhiêu phần tử?',opts:['A. m+n','B. m−n','C. mn','D. m/n'],ans:2,sol:'Ma trận cấp m×n có m hàng và n cột, tổng cộng m×n phần tử.'},
+  {q:'Ma trận vuông cấp n có số hàng và số cột đều bằng:',opts:['A. n−1','B. n+1','C. n','D. n²'],ans:2,sol:'Ma trận vuông cấp n: số hàng = số cột = n.'},
+  {q:'Ma trận đơn vị I_n có đặc điểm:',opts:['A. Tất cả phần tử bằng 1','B. Đường chéo chính = 1, còn lại = 0','C. Tất cả bằng 0','D. Định thức bằng n'],ans:1,sol:'I_n: a_ii = 1 với mọi i, a_ij = 0 với i ≠ j.'},
+  {q:'Định thức của ma trận đơn vị I_n bằng:',opts:['A. 0','B. n','C. 1','D. n!'],ans:2,sol:'det(I_n) = 1.'},
+  {q:'A cấp 2×3, B cấp 3×4. Tích AB có cấp:',opts:['A. 2×4','B. 3×3','C. 2×3','D. Không xác định'],ans:0,sol:'Số cột A = số hàng B = 3. Kết quả AB cấp 2×4.'},
+  {q:'det([[1,2],[3,4]]) bằng:',opts:['A. 10','B. −2','C. 2','D. −10'],ans:1,sol:'det = 1×4 − 2×3 = 4 − 6 = −2.'},
+  {q:'A^T của A = [[1,2],[3,4]] là:',opts:['A. [[1,3],[2,4]]','B. [[4,3],[2,1]]','C. [[1,2],[3,4]]','D. [[−1,−2],[−3,−4]]'],ans:0,sol:'Chuyển vị đổi hàng thành cột: A^T = [[1,3],[2,4]].'},
+  {q:'Ma trận với det = 0 gọi là:',opts:['A. Ma trận đơn vị','B. Ma trận khả nghịch','C. Ma trận suy biến','D. Ma trận đối xứng'],ans:2,sol:'Ma trận suy biến (singular) có det = 0.'},
+  {q:'det(AB) = ?',opts:['A. det(A)+det(B)','B. det(A)×det(B)','C. det(A)−det(B)','D. det(A)/det(B)'],ans:1,sol:'Định lý nhân định thức: det(AB) = det(A)·det(B).'},
+  {q:'det(A^T) bằng:',opts:['A. −det(A)','B. 1/det(A)','C. det(A)','D. 0'],ans:2,sol:'det(A^T) = det(A).'},
+],
+'1.2_TH':[
+  {q:'Tính det([[2,1],[5,3]]):',opts:['A. 1','B. −1','C. 11','D. 6'],ans:0,sol:'det = 2×3 − 1×5 = 6 − 5 = 1.'},
+  {q:'Ma trận nghịch đảo của A = [[2,1],[5,3]] là:',opts:['A. [[3,−1],[−5,2]]','B. [[3,1],[5,2]]','C. [[−3,1],[5,−2]]','D. [[2,−1],[−5,3]]'],ans:0,sol:'det(A) = 1. A⁻¹ = [[d,−b],[−c,a]] / det = [[3,−1],[−5,2]].'},
+  {q:'det([[1,2,3],[4,5,6],[7,8,9]]) bằng:',opts:['A. 0','B. 1','C. −1','D. 6'],ans:0,sol:'Hàng 3 = hàng 1 + hàng 2 (trường hợp đặc biệt), nên det = 0.'},
+  {q:'Hoán vị 2 hàng của ma trận làm định thức:',opts:['A. Không đổi','B. Đổi dấu','C. Nhân đôi','D. Bằng 0'],ans:1,sol:'Hoán vị hai hàng (hay hai cột) làm định thức đổi dấu.'},
+  {q:'Hạng của [[1,2],[2,4]] bằng:',opts:['A. 2','B. 0','C. 1','D. −1'],ans:2,sol:'Hàng 2 = 2×hàng 1 → phụ thuộc tuyến tính → rank = 1.'},
+  {q:'Cộng hai ma trận A và B yêu cầu:',opts:['A. A và B cùng cấp','B. số cột A = số hàng B','C. A là vuông','D. det(A) ≠ 0'],ans:0,sol:'Phép cộng ma trận yêu cầu hai ma trận cùng cấp.'},
+  {q:'A² với A = [[1,1],[0,1]] là:',opts:['A. [[1,2],[0,1]]','B. [[1,1],[0,1]]','C. [[2,1],[0,2]]','D. [[1,0],[0,1]]'],ans:0,sol:'A² = [[1+0,1+1],[0,0+1]] = [[1,2],[0,1]].'},
+  {q:'Ma trận vuông khả nghịch khi và chỉ khi:',opts:['A. det = 0','B. det ≠ 0','C. trace = 0','D. A = A^T'],ans:1,sol:'Điều kiện khả nghịch: det(A) ≠ 0.'},
+  {q:'det(kA) với A cấp n × n bằng:',opts:['A. k·det(A)','B. k²·det(A)','C. kⁿ·det(A)','D. det(A)'],ans:2,sol:'Nhân k vào mỗi hàng (có n hàng): det(kA) = kⁿ·det(A).'},
+  {q:'Phần tử bù đại số A₁₂ của [[a,b],[c,d]] bằng:',opts:['A. d','B. −c','C. −b','D. a'],ans:1,sol:'A₁₂ = (−1)^(1+2)·M₁₂ = −M₁₂ = −c.'},
+],
+'1.2_VD':[
+  {q:'Hạng của ma trận A = [[1,2,3],[2,4,6],[3,6,9]] bằng:',opts:['A. 3','B. 2','C. 1','D. 0'],ans:2,sol:'Ba hàng tỉ lệ nhau (hàng 2 = 2×h.1, hàng 3 = 3×h.1) nên rank = 1.'},
+  {q:'Tìm x để det([[x,2],[3,x]]) = 0:',opts:['A. x = ±√6','B. x = ±2','C. x = ±3','D. x = ±1'],ans:0,sol:'det = x² − 6 = 0 → x = ±√6.'},
+],
+'1.2_VDC':[
+  {q:'det(A) = 4, A cấp 3×3. Tính det(3A):',opts:['A. 12','B. 36','C. 108','D. 324'],ans:2,sol:'det(3A) = 3³·det(A) = 27·4 = 108.'},
+  {q:'det(A)=2, det(B)=−3, A và B cấp 3×3. Tính det(A²B^T):',opts:['A. −12','B. 12','C. −6','D. 6'],ans:0,sol:'det(A²B^T) = det(A²)·det(B^T) = det(A)²·det(B) = 4·(−3) = −12.'},
+],
+'1.3_TH':[
+  {q:'Hệ x+y=3, 2x+2y=6 có bao nhiêu nghiệm?',opts:['A. Vô nghiệm','B. Nghiệm duy nhất','C. Vô số nghiệm','D. 2 nghiệm'],ans:2,sol:'PT2 = 2×PT1 → hệ có vô số nghiệm (1 tham số tự do).'},
+  {q:'Hệ Ax=b có nghiệm khi và chỉ khi:',opts:['A. det(A)≠0','B. rank(A)=rank(A|b)','C. rank(A)=n','D. b=0'],ans:1,sol:'Điều kiện tương thích: rank(A) = rank(A|b).'},
+],
+'1.3_VD':[
+  {q:'Giải hệ x+2y=5, 3x−y=8. Nghiệm là:',opts:['A. x=3, y=1','B. x=1, y=2','C. x=2, y=1.5','D. x=3, y=2'],ans:0,sol:'Từ PT1: x=5−2y. Thế vào PT2: 3(5−2y)−y=8 → 15−7y=8 → y=1, x=3.'},
+  {q:'Hệ Ax=0 với det(A)=0 có:',opts:['A. Chỉ nghiệm tầm thường','B. Vô số nghiệm','C. Vô nghiệm','D. Đúng 2 nghiệm'],ans:1,sol:'det(A)=0 → hệ thuần nhất có nghiệm không tầm thường → vô số nghiệm.'},
+],
+'1.3_VDC':[
+  {q:'Hệ 3×3, rank(A)=rank(A|b)=2. Số ẩn tự do là:',opts:['A. 0','B. 1','C. 2','D. 3'],ans:1,sol:'Số ẩn tự do = n − rank(A) = 3 − 2 = 1.'},
+  {q:'Quy tắc Cramer áp dụng khi:',opts:['A. Hệ vô số nghiệm','B. Ma trận vuông, det≠0','C. Hệ thuần nhất','D. Số PT > số ẩn'],ans:1,sol:'Cramer áp dụng cho hệ vuông (n ẩn, n PT) với det(A)≠0.'},
+],
+'2.1_NB':[
+  {q:'Không gian vectơ thực thỏa bao nhiêu tiên đề?',opts:['A. 6','B. 8','C. 10','D. 4'],ans:1,sol:'8 tiên đề: 4 cho phép cộng vectơ, 4 cho nhân vô hướng.'},
+  {q:'Hệ {v₁,...,vₖ} phụ thuộc tuyến tính khi:',opts:['A. Chỉ λ_i=0 thỏa Σλᵢvᵢ=0','B. ∃ hệ số ≠(0,...,0): Σλᵢvᵢ=0','C. Các vectơ vuông góc','D. Tổng các vectơ = 0'],ans:1,sol:'Phụ thuộc tuyến tính: tồn tại hệ số không đồng thời bằng 0 cho tổ hợp tuyến tính = 0.'},
+  {q:'Vectơ không 0 có quan hệ với mọi hệ vectơ:',opts:['A. Độc lập','B. Phụ thuộc','C. Không liên quan','D. Trực giao'],ans:1,sol:'Bất kỳ hệ nào chứa vectơ không đều phụ thuộc tuyến tính.'},
+  {q:'Không gian con W của V cần:',opts:['A. 0∈W và đóng với + và nhân vô hướng','B. Chỉ cần 0∈W','C. Phải là toàn bộ V','D. Hữu hạn phần tử'],ans:0,sol:'Không gian con: chứa 0, đóng với cộng vectơ và nhân vô hướng.'},
+  {q:'u và v độc lập tuyến tính khi:',opts:['A. u+v=0','B. u=v','C. Không vectơ nào là bội của vectơ kia','D. u·v=0'],ans:2,sol:'Độc lập tuyến tính ⟺ không vectơ nào là bội của vectơ kia.'},
+],
+'2.1_TH':[
+  {q:'{(1,2),(2,4),(3,6)} trong ℝ² là:',opts:['A. Độc lập','B. Phụ thuộc','C. Không xác định','D. Chỉ từng đôi phụ thuộc'],ans:1,sol:'(2,4)=2(1,2), (3,6)=3(1,2) → phụ thuộc. Ngoài ra, mọi 3 vectơ trong ℝ² đều phụ thuộc.'},
+  {q:'{e₁=(1,0,0), e₂=(0,1,0), e₃=(0,0,1)} trong ℝ³ là:',opts:['A. Phụ thuộc','B. Độc lập','C. Không hợp lệ','D. Toàn vectơ không'],ans:1,sol:'Đây là cơ sở chuẩn của ℝ³, độc lập tuyến tính.'},
+],
+'2.1_VD':[
+  {q:'{v₁=(1,1,0), v₂=(0,1,1), v₃=(1,0,−1)} có độc lập không?',opts:['A. Độc lập','B. Phụ thuộc','C. Cần thêm thông tin','D. Phụ thuộc chỉ trong ℝ²'],ans:1,sol:'v₁−v₂−v₃ = (1,1,0)−(0,1,1)−(1,0,−1) = (0,0,0) → phụ thuộc.'},
+  {q:'Giá trị t để {(1,2),(t,1)} phụ thuộc tuyến tính:',opts:['A. t=1/2','B. t=2','C. t=0','D. t=−1/2'],ans:0,sol:'Phụ thuộc ⟺ det=0: 1×1−2×t=0 → t=1/2.'},
+  {q:'Không gian sinh bởi {(1,0,1),(0,1,0)} trong ℝ³ có số chiều:',opts:['A. 3','B. 2','C. 1','D. 0'],ans:1,sol:'Hai vectơ không tỉ lệ → sinh không gian con chiều 2.'},
+  {q:'4 vectơ bất kỳ trong ℝ³ luôn:',opts:['A. Độc lập tuyến tính','B. Phụ thuộc tuyến tính','C. Tạo cơ sở','D. Có thể độc lập hay phụ thuộc'],ans:1,sol:'dim(ℝ³)=3 nên mọi tập gồm 4+ vectơ đều phụ thuộc tuyến tính.'},
+],
+'2.2_NB':[
+  {q:'dim(ℝⁿ) bằng:',opts:['A. n/2','B. n²','C. n','D. 2n'],ans:2,sol:'Cơ sở chuẩn gồm n vectơ nên dim(ℝⁿ) = n.'},
+  {q:'Cơ sở của không gian vectơ V là:',opts:['A. Chỉ cần hệ sinh V','B. Chỉ cần độc lập tuyến tính','C. Hệ sinh và độc lập tuyến tính','D. Tập con bất kỳ'],ans:2,sol:'Cơ sở = hệ vừa sinh V vừa độc lập tuyến tính.'},
+  {q:'V có cơ sở 5 phần tử thì dim(V) = ?',opts:['A. 4','B. 5','C. 6','D. 25'],ans:1,sol:'Số chiều = số phần tử cơ sở = 5.'},
+  {q:'Hạng của ma trận A là:',opts:['A. Số cột','B. Số hàng','C. Số hàng khác không sau khử Gauss','D. min(m,n)'],ans:2,sol:'Hạng = số hàng khác không trong dạng bậc thang.'},
+  {q:'Hạng của ma trận không bằng:',opts:['A. 1','B. Số hàng','C. 0','D. Không xác định'],ans:2,sol:'Ma trận không có tất cả phần tử = 0 nên hạng = 0.'},
+  {q:'rank(A) = n (số cột) ⟺ các cột A:',opts:['A. Phụ thuộc','B. Độc lập','C. Bằng nhau','D. Tạo cơ sở ℝⁿ'],ans:1,sol:'rank = số cột ⟺ các cột độc lập tuyến tính.'},
+  {q:'dim(Ker A) với A cấp m×n bằng:',opts:['A. rank(A)','B. m−rank(A)','C. n−rank(A)','D. m+n−rank(A)'],ans:2,sol:'Định lý số chiều: dim(Ker A) = n − rank(A).'},
+  {q:'rank(A) = rank(A^T) vì:',opts:['A. Hàng A = Cột A^T','B. Hạng hàng = Hạng cột','C. det không đổi','D. Cùng cấp'],ans:1,sol:'Hạng hàng luôn bằng hạng cột nên rank(A) = rank(A^T).'},
+],
+'2.2_TH':[
+  {q:'Hạng của A = [[1,2,3],[2,4,6],[0,1,1]]:',opts:['A. 3','B. 2','C. 1','D. 0'],ans:1,sol:'H.2=2×H.1. Loại H.2, còn [[1,2,3],[0,1,1]] → 2 hàng độc lập → rank=2.'},
+  {q:'dim(Im(A)) + dim(Ker(A)) bằng:',opts:['A. m (số hàng)','B. n (số cột)','C. m+n','D. rank(A)'],ans:1,sol:'Định lý rank-nullity: dim(Im) + dim(Ker) = n.'},
+  {q:'rank(A)=rank(A|b)=r < n thì hệ Ax=b có:',opts:['A. Vô nghiệm','B. Nghiệm duy nhất','C. Vô số nghiệm với n−r tham số','D. Đúng r nghiệm'],ans:2,sol:'Tương thích với r < n → vô số nghiệm, n−r ẩn tự do.'},
+  {q:'Không gian con sinh bởi một vectơ ≠ 0 có chiều:',opts:['A. 0','B. 1','C. 2','D. Bằng độ dài'],ans:1,sol:'Span{v} với v≠0 là đường thẳng qua gốc, chiều = 1.'},
+  {q:'A cấp 3×5, dim(Ker A) tối đa là:',opts:['A. 3','B. 4','C. 5','D. 2'],ans:2,sol:'dim(Ker) = n − rank. rank ≥ 0 nên dim(Ker) ≤ 5.'},
+  {q:'Cơ sở của không gian cột A = [[1,0],[0,1],[1,1]] là:',opts:['A. {(1,0,1),(0,1,1)}','B. {(1,0,0),(0,1,0)}','C. {(1,0,0),(0,1,0),(0,0,1)}','D. {(1,1,2)}'],ans:0,sol:'Hai cột (1,0,1) và (0,1,1) độc lập → cơ sở không gian cột.'},
+],
+'2.2_VD':[
+  {q:'W = {(x,y,z): x+y+z=0}. Cơ sở và số chiều?',opts:['A. Chiều 2, cơ sở {(1,−1,0),(1,0,−1)}','B. Chiều 1','C. Chiều 3','D. Chiều 2, cơ sở {(1,0,0),(0,1,0)}'],ans:0,sol:'x=−y−z. Đặt y=s, z=t: v=s(1,−1,0)+t(1,0,−1). Hai vectơ độc lập → dim=2.'},
+  {q:'A cấp 4×6, rank(A)=3. dim(Ker A)=?',opts:['A. 3','B. 4','C. 1','D. 2'],ans:0,sol:'dim(Ker) = n − rank = 6 − 3 = 3.'},
+],
+'2.2_VDC':[
+  {q:'V là không gian đa thức bậc ≤ 2. {1, x, x²} là:',opts:['A. Phụ thuộc','B. Cơ sở của V','C. Sinh nhưng không độc lập','D. Không sinh V'],ans:1,sol:'{1, x, x²} là cơ sở chuẩn của P₂, dim = 3.'},
+  {q:'W₁, W₂ là không gian con của V. dim(W₁+W₂) = ?',opts:['A. dim(W₁)+dim(W₂)','B. dim(W₁)+dim(W₂)−dim(W₁∩W₂)','C. max(dim W₁,dim W₂)','D. dim(W₁)·dim(W₂)'],ans:1,sol:'Công thức Grassmann: dim(W₁+W₂) = dim(W₁)+dim(W₂)−dim(W₁∩W₂).'},
+],
+'3.1_NB':[
+  {q:'Phương trình đặc trưng để tìm giá trị riêng λ là:',opts:['A. Ax=λx','B. det(A−λI)=0','C. A−λI=0','D. trace(A)=λ'],ans:1,sol:'Phương trình đặc trưng: det(A−λI) = 0.'},
+  {q:'Vectơ riêng ứng với λ của A thỏa:',opts:['A. Ax=0','B. Ax=λx, x≠0','C. det(A)=λ','D. A^T x=λx'],ans:1,sol:'Vectơ riêng: Ax = λx với x ≠ 0.'},
+  {q:'Tổng các giá trị riêng của A bằng:',opts:['A. det(A)','B. trace(A)','C. rank(A)','D. n'],ans:1,sol:'Tổng giá trị riêng = trace(A) = tổng phần tử đường chéo.'},
+  {q:'Tích các giá trị riêng của A bằng:',opts:['A. trace(A)','B. rank(A)','C. det(A)','D. n'],ans:2,sol:'Tích giá trị riêng = det(A).'},
+  {q:'Ma trận đối xứng thực A = A^T có giá trị riêng:',opts:['A. Luôn dương','B. Luôn âm','C. Luôn thực','D. Luôn nguyên'],ans:2,sol:'Định lý phổ thực: ma trận đối xứng thực có giá trị riêng thực.'},
+  {q:'Ánh xạ tuyến tính f: V→W bảo toàn:',opts:['A. Độ dài vectơ','B. Phép cộng và nhân vô hướng','C. Góc giữa các vectơ','D. Định thức'],ans:1,sol:'f(u+v)=f(u)+f(v) và f(λv)=λf(v).'},
+],
+'3.1_TH':[
+  {q:'A = [[3,1],[0,3]] có giá trị riêng:',opts:['A. λ=3 (bội 2)','B. λ=0 và λ=3','C. λ=1 và λ=3','D. λ=±3'],ans:0,sol:'det(A−λI)=(3−λ)²=0 → λ=3 bội 2.'},
+  {q:'A = [[2,0],[0,3]]. Vectơ riêng ứng với λ=2 là:',opts:['A. (1,0)','B. (0,1)','C. (1,1)','D. (2,3)'],ans:0,sol:'(A−2I)x=0 → [[0,0],[0,1]]x=0 → x₂=0. Vectơ riêng: (1,0).'},
+  {q:'A chéo hóa được khi:',opts:['A. A đối xứng','B. A có n vectơ riêng độc lập','C. det(A)≠0','D. A là ma trận vuông'],ans:1,sol:'A chéo hóa được ⟺ có đủ n vectơ riêng độc lập tuyến tính.'},
+  {q:'Nếu A = PDP⁻¹ thì A² = ?',opts:['A. P²D²P⁻²','B. PD²P⁻¹','C. D²','D. P⁻¹D²P'],ans:1,sol:'A² = PDP⁻¹·PDP⁻¹ = PD²P⁻¹.'},
+  {q:'Vectơ riêng của I_n ứng với λ=1 là:',opts:['A. Chỉ e₁,...,eₙ','B. Mọi vectơ ≠ 0','C. Chỉ (1,...,1)','D. Không có'],ans:1,sol:'Ix=x=1·x với mọi x ≠ 0 nên mọi vectơ khác không đều là vectơ riêng.'},
+  {q:'Ma trận có giá trị riêng bằng 0 thì:',opts:['A. Khả nghịch','B. Là ma trận đơn vị','C. Suy biến (det=0)','D. Là đường chéo'],ans:2,sol:'Tích giá trị riêng = det. Nếu λ=0 là giá trị riêng → det=0 → suy biến.'},
+],
+'3.1_VD':[
+  {q:'Giá trị riêng của A = [[1,2],[2,1]]:',opts:['A. λ=1 và λ=2','B. λ=3 và λ=−1','C. λ=0 và λ=2','D. λ=±1'],ans:1,sol:'det(A−λI)=(1−λ)²−4=λ²−2λ−3=(λ−3)(λ+1)=0 → λ=3 và λ=−1.'},
+  {q:'A có λ₁=1, λ₂=2, λ₃=3. trace(A) và det(A) lần lượt là:',opts:['A. 6 và 6','B. 3 và 6','C. 6 và 3','D. 3 và 3'],ans:0,sol:'trace = 1+2+3 = 6, det = 1×2×3 = 6.'},
+  {q:'Ma trận trực giao P thỏa:',opts:['A. P^T = P','B. P^T = P⁻¹','C. P = P⁻¹','D. PP^T = 0'],ans:1,sol:'Ma trận trực giao: P^T = P⁻¹ ⟺ PP^T = I.'},
+  {q:'λ là giá trị riêng của A → λ² là giá trị riêng của:',opts:['A. 2A','B. A²','C. A^T','D. A⁻¹'],ans:1,sol:'Ax=λx → A²x=A(λx)=λ²x. Vậy λ² là giá trị riêng của A².'},
+],
+'3.1_VDC':[
+  {q:'A = PBP⁻¹ (đồng dạng). Kết luận đúng:',opts:['A. A và B có cùng det, trace, giá trị riêng','B. A = B','C. Cả hai phải đối xứng','D. P phải trực giao'],ans:0,sol:'Đồng dạng bảo toàn: det, trace, giá trị riêng, đa thức đặc trưng, hạng.'},
+  {q:'A=[[0,−1],[1,0]] (quay 90°) có giá trị riêng trong ℂ:',opts:['A. ±1','B. ±i','C. 0','D. Không có'],ans:1,sol:'det(A−λI)=λ²+1=0 → λ=±i trong ℂ.'},
+],
+'3.2_TH':[
+  {q:'Q(x)=x₁²+4x₁x₂+4x₂² viết dưới dạng bình phương:',opts:['A. (x₁+2x₂)²','B. (x₁+x₂)²','C. (x₁−2x₂)²','D. (2x₁+x₂)²'],ans:0,sol:'x₁²+4x₁x₂+4x₂² = (x₁+2x₂)².'},
+  {q:'Ma trận của dạng toàn phương Q=ax₁²+bx₁x₂+cx₂² là:',opts:['A. [[a,b],[b,c]]','B. [[a,b/2],[b/2,c]]','C. [[a,b],[0,c]]','D. [[a,0],[b,c]]'],ans:1,sol:'Ma trận dạng toàn phương phải đối xứng: A=[[a, b/2],[b/2, c]].'},
+],
+'3.2_VD':[
+  {q:'Q=x²+2xy+2y². Loại dạng toàn phương (xét xác định dương)?',opts:['A. Xác định dương','B. Xác định âm','C. Bất định','D. Nửa xác định'],ans:0,sol:'A=[[1,1],[1,2]], det₁=1>0, det₂=2−1=1>0 → xác định dương (tiêu chuẩn Sylvester).'},
+  {q:'Dạng toàn phương xác định dương A có giá trị riêng:',opts:['A. Tất cả âm','B. Tất cả dương','C. Hỗn hợp','D. Bằng 0'],ans:1,sol:'Dạng toàn phương xác định dương ⟺ mọi giá trị riêng đều dương.'},
+],
+};
+
+const PLAN = [
+  {key:'1.1_NB',n:4},{key:'1.2_NB',n:3},{key:'1.2_TH',n:3},{key:'1.2_VD',n:1},{key:'1.2_VDC',n:1},
+  {key:'1.3_TH',n:1},{key:'1.3_VD',n:1},{key:'1.3_VDC',n:1},
+  {key:'2.1_NB',n:2},{key:'2.1_TH',n:1},{key:'2.1_VD',n:2},
+  {key:'2.2_NB',n:4},{key:'2.2_TH',n:3},{key:'2.2_VD',n:1},{key:'2.2_VDC',n:1},
+  {key:'3.1_NB',n:3},{key:'3.1_TH',n:3},{key:'3.1_VD',n:2},{key:'3.1_VDC',n:1},
+  {key:'3.2_TH',n:1},{key:'3.2_VD',n:1},
+];
+
+const TOPICS = {
+  '1.1':'Số phức','1.2':'Ma trận, định thức','1.3':'Hệ PTTT',
+  '2.1':'Không gian vectơ','2.2':'Cơ sở, số chiều, hạng',
+  '3.1':'Ánh xạ, trị riêng','3.2':'Dạng toàn phương'
+};
+
+function rng(seed){let s=seed;return function(){s=Math.imul(s^s>>>15,1|s);s^=s+Math.imul(s^s>>>7,61|s)^s;return((s^s>>>14)>>>0)/4294967296};}
+
+function makeExam(seed){
+  const r=rng(seed);
+  const qs=[];
+  PLAN.forEach(p=>{
+    const pool=(QB[p.key]||[]).slice();
+    pool.sort(()=>r()-0.5);
+    for(let i=0;i<Math.min(p.n,pool.length);i++){
+      const q={...pool[i]};
+      q.level=p.key.split('_')[1];
+      const prefix=p.key.split('_')[0].split('.').slice(0,2).join('.');
+      q.topic=TOPICS[prefix]||'';
+      q.key=p.key;
+      qs.push(q);
+    }
+  });
+  // fill to 40 if needed
+  while(qs.length<40){
+    const keys=Object.keys(QB);
+    const k=keys[Math.floor(r()*keys.length)];
+    const pool=QB[k];
+    const q={...pool[Math.floor(r()*pool.length)]};
+    q.level=k.split('_')[1];
+    q.topic=TOPICS[k.split('_')[0].split('.').slice(0,2).join('.')]||'';
+    q.key=k;
+    qs.push(q);
+  }
+  return qs.slice(0,40);
+}
+
+let ST={examIdx:0,questions:[],answers:[],currentQ:0,timer:null,timeLeft:3600,submitted:false,reviewQ:0};
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function startExam(i){
+  ST={...ST,examIdx:i,questions:makeExam(i*9973+7777),answers:new Array(40).fill(null),currentQ:0,timeLeft:3600,submitted:false};
+  document.getElementById('exam-title').textContent='Đề '+(i+1);
+  showScreen('exam');
+  renderQ();
+  clearInterval(ST.timer);
+  ST.timer=setInterval(tick,1000);
+}
+
+function tick(){
+  ST.timeLeft--;
+  const m=String(Math.floor(ST.timeLeft/60)).padStart(2,'0');
+  const s=String(ST.timeLeft%60).padStart(2,'0');
+  const el=document.getElementById('timer-display');
+  el.textContent=m+':'+s;
+  el.className='timer'+(ST.timeLeft<300?' warn':'');
+  if(ST.timeLeft<=0){clearInterval(ST.timer);submitExam();}
+}
+
+function renderQ(){
+  const q=ST.questions[ST.currentQ];
+  const i=ST.currentQ;
+  const answered=ST.answers.filter(a=>a!==null).length;
+  document.getElementById('q-counter').textContent='Câu '+(i+1)+' / 40';
+  document.getElementById('q-answered').textContent='Đã trả lời: '+answered+' / 40';
+  document.getElementById('q-progress').style.width=((answered/40)*100)+'%';
+  document.getElementById('q-num').textContent='Câu '+(i+1);
+  const lvl=document.getElementById('q-level');
+  lvl.textContent=q.level;
+  lvl.className='badge badge-'+q.level.toLowerCase();
+  document.getElementById('q-topic').textContent=q.topic;
+  document.getElementById('q-text').textContent=q.q;
+  const optDiv=document.getElementById('q-options');
+  optDiv.innerHTML='';
+  q.opts.forEach((o,idx)=>{
+    const btn=document.createElement('button');
+    btn.className='option-btn';
+    if(ST.answers[i]===idx) btn.classList.add('selected');
+    if(ST.submitted){
+      btn.disabled=true;
+      if(idx===q.ans) btn.classList.add('correct');
+      else if(ST.answers[i]===idx) btn.classList.add('wrong');
+    }
+    btn.textContent=o;
+    if(!ST.submitted) btn.onclick=()=>{ST.answers[i]=idx;renderQ();};
+    optDiv.appendChild(btn);
+  });
+  const sol=document.getElementById('q-solution');
+  sol.textContent='💡 '+q.sol;
+  sol.className='solution'+(ST.submitted?' show':'');
+  renderQNav();
+}
+
+function renderQNav(){
+  const nav=document.getElementById('q-nav');
+  nav.innerHTML='';
+  ST.questions.forEach((_,i)=>{
+    const btn=document.createElement('button');
+    btn.className='q-nav-btn';
+    btn.textContent=i+1;
+    if(i===ST.currentQ) btn.classList.add('current');
+    else if(ST.submitted){
+      if(ST.answers[i]===ST.questions[i].ans) btn.classList.add('correct-nav');
+      else if(ST.answers[i]!==null) btn.classList.add('wrong-nav');
+    } else if(ST.answers[i]!==null) btn.classList.add('answered');
+    btn.onclick=()=>{ST.currentQ=i;renderQ();};
+    nav.appendChild(btn);
+  });
+}
+
+function nextQ(){if(ST.currentQ<39){ST.currentQ++;renderQ();}}
+function prevQ(){if(ST.currentQ>0){ST.currentQ--;renderQ();}}
+
+function submitExam(){
+  const unanswered=ST.answers.filter(a=>a===null).length;
+  if(unanswered>0&&!ST.submitted){
+    if(!confirm('Còn '+unanswered+' câu chưa trả lời. Nộp bài?')) return;
+  }
+  clearInterval(ST.timer);
+  ST.submitted=true;
+  renderQ();
+  buildResult();
+  showScreen('result');
+}
+
+function buildResult(){
+  let correct=0,wrong=0,blank=0;
+  ST.questions.forEach((q,i)=>{
+    if(ST.answers[i]===null) blank++;
+    else if(ST.answers[i]===q.ans) correct++;
+    else wrong++;
+  });
+  const score=(correct/4).toFixed(1);
+  const elapsed=3600-ST.timeLeft;
+  const em=Math.floor(elapsed/60),es=elapsed%60;
+  document.getElementById('result-title').textContent='Kết quả — Đề '+(ST.examIdx+1);
+  document.getElementById('result-sub').textContent='Hoàn thành sau '+em+' phút '+es+' giây · '+blank+' câu bỏ trống';
+  document.getElementById('s-score').textContent=score;
+  document.getElementById('s-correct').textContent=correct;
+  document.getElementById('s-wrong').textContent=wrong;
+  buildLevelStats();
+  buildTopicStats();
+  buildDetails();
+}
+
+function buildLevelStats(){
+  const levels=['NB','TH','VD','VDC'];
+  const counts={};
+  levels.forEach(l=>counts[l]={t:0,c:0});
+  ST.questions.forEach((q,i)=>{
+    counts[q.level].t++;
+    if(ST.answers[i]===q.ans) counts[q.level].c++;
+  });
+  document.getElementById('by-level').innerHTML=
+    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">'+
+    levels.map(l=>{
+      const pct=counts[l].t?Math.round(counts[l].c/counts[l].t*100):0;
+      return`<div class="stat-card">
+        <span class="badge badge-${l.toLowerCase()}">${l}</span>
+        <div style="font-size:20px;font-weight:700;margin:6px 0">${counts[l].c}/${counts[l].t}</div>
+        <div style="background:#e5e7eb;border-radius:3px;height:6px"><div style="width:${pct}%;height:6px;background:#1d4ed8;border-radius:3px"></div></div>
+        <div class="muted" style="margin-top:4px">${pct}%</div>
+      </div>`;
+    }).join('')+'</div>';
+}
+
+function buildTopicStats(){
+  const tmap={};
+  ST.questions.forEach((q,i)=>{
+    if(!tmap[q.topic]) tmap[q.topic]={t:0,c:0};
+    tmap[q.topic].t++;
+    if(ST.answers[i]===q.ans) tmap[q.topic].c++;
+  });
+  document.getElementById('by-topic').innerHTML=
+    Object.entries(tmap).map(([name,d])=>{
+      const pct=Math.round(d.c/d.t*100);
+      return`<div style="padding:8px 0;border-bottom:1px solid #f0f0ea;display:flex;align-items:center;gap:10px">
+        <div style="flex:1;font-size:13px">${name}</div>
+        <div style="font-size:13px;font-weight:600">${d.c}/${d.t}</div>
+        <div style="width:80px;background:#e5e7eb;border-radius:3px;height:6px">
+          <div style="width:${pct}%;height:6px;background:${pct>=70?'#16a34a':pct>=40?'#ca8a04':'#dc2626'};border-radius:3px"></div>
+        </div>
+      </div>`;
+    }).join('');
+}
+
+function buildDetails(){
+  document.getElementById('detail-list').innerHTML=ST.questions.map((q,i)=>{
+    const ok=ST.answers[i]===q.ans;
+    const blank=ST.answers[i]===null;
+    const color=ok?'#16a34a':blank?'#9ca3af':'#dc2626';
+    const icon=ok?'✓':blank?'—':'✗';
+    return`<div class="detail-row" onclick="goReview(${i})">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="color:${color};font-weight:700;min-width:18px;font-size:16px">${icon}</span>
+        <span class="muted" style="min-width:52px">Câu ${i+1}</span>
+        <span class="badge badge-${q.level.toLowerCase()}">${q.level}</span>
+        <span style="flex:1;font-size:13px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${q.q}</span>
+      </div>
+      ${!ok&&!blank?`<div style="font-size:12px;color:#666;margin:4px 0 0 26px">Bạn chọn: ${q.opts[ST.answers[i]]} &nbsp;→&nbsp; Đáp án: <b>${q.opts[q.ans]}</b></div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function switchTab(id){
+  document.getElementById('by-level').style.display=id==='by-level'?'block':'none';
+  document.getElementById('by-topic').style.display=id==='by-topic'?'block':'none';
+  document.getElementById('tab-level').className='tab-btn'+(id==='by-level'?' active':'');
+  document.getElementById('tab-topic').className='tab-btn'+(id==='by-topic'?' active':'');
+}
+
+function goReview(idx){
+  ST.reviewQ=idx;
+  renderReview();
+  showScreen('review');
+}
+
+function reviewExam(){
+  ST.reviewQ=0;
+  document.getElementById('review-title').textContent='Xem lại — Đề '+(ST.examIdx+1);
+  renderReview();
+  showScreen('review');
+}
+
+function renderReview(){
+  const q=ST.questions[ST.reviewQ];
+  const i=ST.reviewQ;
+  document.getElementById('rv-num').textContent='Câu '+(i+1)+' / 40';
+  const rl=document.getElementById('rv-level');
+  rl.textContent=q.level;
+  rl.className='badge badge-'+q.level.toLowerCase();
+  document.getElementById('rv-topic').textContent=q.topic;
+  document.getElementById('rv-text').textContent=q.q;
+  const optDiv=document.getElementById('rv-options');
+  optDiv.innerHTML='';
+  q.opts.forEach((o,idx)=>{
+    const btn=document.createElement('button');
+    btn.className='option-btn';
+    btn.disabled=true;
+    if(idx===q.ans) btn.classList.add('correct');
+    else if(ST.answers[i]===idx) btn.classList.add('wrong');
+    btn.textContent=o+(idx===q.ans?' ✓':'')+(ST.answers[i]===idx&&idx!==q.ans?' (bạn chọn)':'');
+    optDiv.appendChild(btn);
+  });
+  document.getElementById('rv-solution').textContent='💡 '+q.sol;
+  renderReviewNav();
+}
+
+function renderReviewNav(){
+  const nav=document.getElementById('review-nav');
+  nav.innerHTML='';
+  ST.questions.forEach((_,i)=>{
+    const btn=document.createElement('button');
+    btn.className='q-nav-btn';
+    btn.textContent=i+1;
+    if(i===ST.reviewQ) btn.classList.add('current');
+    else if(ST.answers[i]===ST.questions[i].ans) btn.classList.add('correct-nav');
+    else if(ST.answers[i]!==null) btn.classList.add('wrong-nav');
+    btn.onclick=()=>{ST.reviewQ=i;renderReview();};
+    nav.appendChild(btn);
+  });
+}
+function nextRv(){if(ST.reviewQ<39){ST.reviewQ++;renderReview();}}
+function prevRv(){if(ST.reviewQ>0){ST.reviewQ--;renderReview();}}
+function backHome(){clearInterval(ST.timer);showScreen('home');}
+
+// Build exam list
+(function(){
+  const list=document.getElementById('exam-list');
+  for(let i=0;i<10;i++){
+    const d=document.createElement('div');
+    d.className='exam-card';
+    d.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <h3 style="margin:0">Đề ${i+1}</h3>
+      <button class="btn btn-primary" style="font-size:13px;padding:6px 14px" onclick="startExam(${i})">Làm bài →</button>
+    </div>
+    <p class="muted" style="font-size:13px;margin-bottom:8px">40 câu · 60 phút · Đủ 3 CLO</p>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <span class="badge badge-nb">NB: 16</span>
+      <span class="badge badge-th">TH: 12</span>
+      <span class="badge badge-vd">VD: 8</span>
+      <span class="badge badge-vdc">VDC: 4</span>
+    </div>`;
+    list.appendChild(d);
+  }
+})();
+</script>
+</body>
+</html>
