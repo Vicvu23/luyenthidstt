@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Luyện thi Đại số tuyến tính</title>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,sans-serif;background:#f5f5f0;color:#1a1a1a;font-size:15px}
@@ -60,6 +62,13 @@ h3{font-size:16px;font-weight:600;margin-bottom:0.5rem}
 .input-control:focus { outline: none; border-color: #1d4ed8; box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.1); background: #fff; }
 .error-msg { color: #dc2626; font-size: 13px; margin-top: 8px; display: none; background: #fef2f2; padding: 8px; border-radius: 6px; border: 1px solid #fecaca; }
 .user-profile { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 10px 15px; border-radius: 12px; border: 1px solid #e0e0d8; margin-bottom: 1rem; }
+
+/* CSS CHO ADMIN */
+.admin-panel { max-width: 800px; margin: 2rem auto; }
+.user-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
+.user-table th, .user-table td { padding: 10px; border: 1px solid #e0e0d8; text-align: left; }
+.user-table th { background: #f5f5f0; }
+.json-output { width: 100%; height: 150px; padding: 10px; font-family: monospace; font-size: 13px; border-radius: 8px; border: 1px solid #ccc; background: #fafaf5; resize: vertical; margin-top: 10px; }
 </style>
 </head>
 <body>
@@ -88,7 +97,10 @@ h3{font-size:16px;font-weight:600;margin-bottom:0.5rem}
 <div id="home" class="screen">
   <div class="user-profile">
     <div style="font-weight: 600; font-size: 14px;">👋 Xin chào, <span id="user-name-display" style="color: #1d4ed8;">Học viên</span>!</div>
-    <button class="btn" style="padding: 6px 12px; font-size: 12px;" onclick="logout()">Đăng xuất</button>
+    <div>
+      <button id="admin-btn" class="btn btn-primary" style="padding: 6px 12px; font-size: 12px; display: none; margin-right: 5px;" onclick="showAdmin()">Quản lý User</button>
+      <button class="btn" style="padding: 6px 12px; font-size: 12px;" onclick="logout()">Đăng xuất</button>
+    </div>
   </div>
 
   <div style="text-align:center;padding:1rem 0 1.5rem">
@@ -124,6 +136,41 @@ h3{font-size:16px;font-weight:600;margin-bottom:0.5rem}
 
   <h2>Chọn đề thi</h2>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px" id="exam-list"></div>
+</div>
+
+<div id="admin-screen" class="screen">
+  <div class="header-bar">
+    <h2 style="margin:0">⚙️ Quản lý Người dùng</h2>
+    <button class="btn" onclick="showScreen('home')">← Về trang chủ</button>
+  </div>
+  
+  <div class="card admin-panel">
+    <h3>Danh sách tài khoản</h3>
+    <table class="user-table" id="admin-user-table">
+      <thead>
+        <tr>
+          <th>Tên đăng nhập</th>
+          <th>Mật khẩu</th>
+          <th style="width: 80px; text-align: center;">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody id="user-table-body">
+        </tbody>
+    </table>
+
+    <div style="display: flex; gap: 10px; margin-bottom: 1.5rem; align-items: center;">
+      <input type="text" id="new-username" class="input-control" style="flex: 1;" placeholder="Tên đăng nhập mới">
+      <input type="text" id="new-password" class="input-control" style="flex: 1;" placeholder="Mật khẩu">
+      <button class="btn btn-primary" onclick="addNewUser()">+ Thêm User</button>
+    </div>
+
+    <hr style="border: 0; border-top: 1px solid #e0e0d8; margin: 1.5rem 0;">
+
+    <h3>Xuất dữ liệu JSON để cập nhật</h3>
+    <p class="muted" style="margin-bottom: 10px;">Copy toàn bộ đoạn code dưới đây, ghi đè vào file <b>users.json</b> trên máy tính của bạn và dùng lệnh <b>git push</b> để cập nhật lên GitHub.</p>
+    <button class="btn" onclick="generateJSON()">🔄 Cập nhật đoạn mã JSON</button>
+    <textarea id="json-export" class="json-output" readonly></textarea>
+  </div>
 </div>
 
 <div id="exam" class="screen">
@@ -220,65 +267,68 @@ h3{font-size:16px;font-weight:600;margin-bottom:0.5rem}
 
 <script>
 // ==================== CHỨC NĂNG ĐĂNG NHẬP ====================
+let globalUsersList = [];
+
 window.onload = () => {
-  // Kiểm tra xem đã có thông tin user lưu trong trình duyệt chưa
   const savedUser = localStorage.getItem('kma_ltdstt_user');
   if (savedUser) {
     document.getElementById('user-name-display').textContent = savedUser;
-    showScreen('home'); // Bỏ qua login, vào thẳng trang chủ
+    checkAdminRole(savedUser);
+    showScreen('home');
   } else {
-    showScreen('login'); // Hiện form login
+    showScreen('login');
   }
 };
 
+function checkAdminRole(username) {
+  const adminBtn = document.getElementById('admin-btn');
+  if (username === 'admin') {
+    adminBtn.style.display = 'inline-block';
+  } else {
+    adminBtn.style.display = 'none';
+  }
+}
+
 async function handleLogin(event) {
-  event.preventDefault(); // Ngăn trình duyệt tự động load lại trang khi submit form
+  event.preventDefault(); 
   
   const usernameInput = document.getElementById('username').value.trim();
   const passwordInput = document.getElementById('password').value;
   const errorMsg = document.getElementById('login-error');
-
-  // Đổi text của nút thành Đang xử lý...
   const submitBtn = event.target.querySelector('button[type="submit"]');
   const originalBtnText = submitBtn.textContent;
+  
   submitBtn.textContent = 'Đang kiểm tra...';
   submitBtn.disabled = true;
 
   try {
-    // 1. Tải file users.json từ cùng thư mục trên GitHub
-    // Mẹo: Dùng url tương đối './users.json' để nó tự động nhận dạng link khi đẩy lên web
     const response = await fetch('./users.json');
-    
-    if (!response.ok) {
-      throw new Error('Không tìm thấy cơ sở dữ liệu (users.json)');
-    }
+    if (!response.ok) throw new Error('Không tìm thấy users.json');
     
     const data = await response.json();
+    globalUsersList = data.users; // Lưu danh sách user vào biến toàn cục
     
-    // 2. Tìm kiếm xem có tài khoản nào khớp với dữ liệu người dùng nhập không
-    const matchedUser = data.users.find(
+    const matchedUser = globalUsersList.find(
       user => user.username === usernameInput && user.password === passwordInput
     );
 
     if (matchedUser) {
-      // Đăng nhập thành công
       localStorage.setItem('kma_ltdstt_user', matchedUser.username);
       document.getElementById('user-name-display').textContent = matchedUser.username;
+      checkAdminRole(matchedUser.username);
       
       document.getElementById('login-form').reset();
       errorMsg.style.display = 'none';
       showScreen('home');
     } else {
-      // Sai tài khoản hoặc mật khẩu
       errorMsg.textContent = 'Sai tên đăng nhập hoặc mật khẩu!';
       errorMsg.style.display = 'block';
     }
   } catch (error) {
     console.error("Lỗi:", error);
-    errorMsg.textContent = 'Lỗi hệ thống: Không thể kết nối đến cơ sở dữ liệu!';
+    errorMsg.textContent = 'Lỗi hệ thống: Không kết nối được cơ sở dữ liệu!';
     errorMsg.style.display = 'block';
   } finally {
-    // Khôi phục lại nút bấm
     submitBtn.textContent = originalBtnText;
     submitBtn.disabled = false;
   }
@@ -286,147 +336,216 @@ async function handleLogin(event) {
 
 function logout() {
   if (confirm('Bạn có chắc chắn muốn đăng xuất không?')) {
-    // Xóa thông tin đã lưu
     localStorage.removeItem('kma_ltdstt_user');
-    // Quay về màn hình login
+    globalUsersList = []; // Xóa data
     showScreen('login');
   }
+}
+
+// === CHỨC NĂNG ADMIN ===
+async function showAdmin() {
+  showScreen('admin-screen');
+  
+  // Nếu list user rỗng (do load thẳng vào trang home), fetch lại data
+  if (globalUsersList.length === 0) {
+    try {
+      const response = await fetch('./users.json');
+      const data = await response.json();
+      globalUsersList = data.users;
+    } catch (e) {
+      console.error(e);
+      alert("Không tải được danh sách User");
+    }
+  }
+  renderUserTable();
+  generateJSON();
+}
+
+function renderUserTable() {
+  const tbody = document.getElementById('user-table-body');
+  tbody.innerHTML = '';
+  globalUsersList.forEach((user, index) => {
+    tbody.innerHTML += `
+      <tr>
+        <td><b>${user.username}</b></td>
+        <td>${user.password}</td>
+        <td style="text-align: center;">
+          ${user.username !== 'admin' ? `<button class="btn btn-danger" style="padding: 4px 8px; font-size: 12px;" onclick="deleteUser(${index})">Xóa</button>` : '<span class="muted">Gốc</span>'}
+        </td>
+      </tr>
+    `;
+  });
+}
+
+function addNewUser() {
+  const uInput = document.getElementById('new-username');
+  const pInput = document.getElementById('new-password');
+  const u = uInput.value.trim();
+  const p = pInput.value.trim();
+
+  if (!u || !p) {
+    alert("Vui lòng nhập đủ tên và mật khẩu!");
+    return;
+  }
+  if (globalUsersList.find(user => user.username === u)) {
+    alert("Tên đăng nhập này đã tồn tại!");
+    return;
+  }
+
+  globalUsersList.push({ username: u, password: p });
+  uInput.value = '';
+  pInput.value = '';
+  renderUserTable();
+  generateJSON();
+}
+
+function deleteUser(index) {
+  if (confirm(`Xóa tài khoản ${globalUsersList[index].username}?`)) {
+    globalUsersList.splice(index, 1);
+    renderUserTable();
+    generateJSON();
+  }
+}
+
+function generateJSON() {
+  const output = { users: globalUsersList };
+  document.getElementById('json-export').value = JSON.stringify(output, null, 2);
 }
 // =============================================================
 
 const QB = {
 '1.1_NB':[
-  {q:'Phần thực của số phức z = 3 − 5i là:',opts:['A. −5','B. 3','C. 5','D. −3'],ans:1,sol:'Số phức z = a + bi có phần thực là a. Với z = 3 − 5i thì a = 3.'},
-  {q:'Phần ảo của số phức z = −2 + 7i là:',opts:['A. −2','B. −7','C. 7','D. 2'],ans:2,sol:'Phần ảo của z = a + bi là b. Với z = −2 + 7i thì b = 7.'},
-  {q:'Môđun của số phức z = 3 + 4i bằng:',opts:['A. 7','B. 5','C. 1','D. 25'],ans:1,sol:'|z| = √(3² + 4²) = √(9 + 16) = √25 = 5.'},
-  {q:'Số phức liên hợp của z = 2 − 3i là:',opts:['A. −2 + 3i','B. 2 + 3i','C. −2 − 3i','D. 3 − 2i'],ans:1,sol:'Liên hợp đổi dấu phần ảo: z̄ = 2 + 3i.'},
-  {q:'i² bằng:',opts:['A. 1','B. i','C. −1','D. −i'],ans:2,sol:'Theo định nghĩa đơn vị ảo: i² = −1.'},
-  {q:'(1 + i)² bằng:',opts:['A. 2','B. 1 + 2i','C. 2i','D. −2'],ans:2,sol:'(1+i)² = 1 + 2i + i² = 1 + 2i − 1 = 2i.'},
-  {q:'Số phức z = 5i có phần thực bằng:',opts:['A. 5','B. 0','C. −5','D. 1'],ans:1,sol:'z = 0 + 5i nên phần thực bằng 0.'},
-  {q:'Nghiệm phức của x² + 4 = 0 là:',opts:['A. x = ±2','B. x = ±2i','C. x = ±4i','D. Vô nghiệm'],ans:1,sol:'x² = −4 → x = ±√(−4) = ±2i.'},
-  {q:'(2 + i)(2 − i) bằng:',opts:['A. 3','B. 5','C. 4 + i','D. 4 − i'],ans:1,sol:'(2+i)(2−i) = 4 − i² = 4 − (−1) = 5.'},
-  {q:'Trong dạng lượng giác, môđun của z = −1 + i là:',opts:['A. 1','B. √2','C. 2','D. √3'],ans:1,sol:'|z| = √(1² + 1²) = √2.'},
+  {q:'Phần thực của số phức $z = 3 - 5i$ là:',opts:['A. $-5$','B. $3$','C. $5$','D. $-3$'],ans:1,sol:'Số phức $z = a + bi$ có phần thực là $a$. Với $z = 3 - 5i$ thì $a = 3$.'},
+  {q:'Phần ảo của số phức $z = -2 + 7i$ là:',opts:['A. $-2$','B. $-7$','C. $7$','D. $2$'],ans:2,sol:'Phần ảo của $z = a + bi$ là $b$. Với $z = -2 + 7i$ thì $b = 7$.'},
+  {q:'Môđun của số phức $z = 3 + 4i$ bằng:',opts:['A. $7$','B. $5$','C. $1$','D. $25$'],ans:1,sol:'$|z| = \\sqrt{3^2 + 4^2} = \\sqrt{9 + 16} = \\sqrt{25} = 5$.'},
+  {q:'Số phức liên hợp của $z = 2 - 3i$ là:',opts:['A. $-2 + 3i$','B. $2 + 3i$','C. $-2 - 3i$','D. $3 - 2i$'],ans:1,sol:'Liên hợp đổi dấu phần ảo: $\\bar{z} = 2 + 3i$.'},
+  {q:'$i^2$ bằng:',opts:['A. $1$','B. $i$','C. $-1$','D. $-i$'],ans:2,sol:'Theo định nghĩa đơn vị ảo: $i^2 = -1$.'},
+  {q:'$(1 + i)^2$ bằng:',opts:['A. $2$','B. $1 + 2i$','C. $2i$','D. $-2$'],ans:2,sol:'$(1+i)^2 = 1 + 2i + i^2 = 1 + 2i - 1 = 2i$.'},
+  {q:'Số phức $z = 5i$ có phần thực bằng:',opts:['A. $5$','B. $0$','C. $-5$','D. $1$'],ans:1,sol:'$z = 0 + 5i$ nên phần thực bằng $0$.'},
+  {q:'Nghiệm phức của $x^2 + 4 = 0$ là:',opts:['A. $x = \\pm 2$','B. $x = \\pm 2i$','C. $x = \\pm 4i$','D. Vô nghiệm'],ans:1,sol:'$x^2 = -4 \\Rightarrow x = \\pm\\sqrt{-4} = \\pm 2i$.'},
+  {q:'$(2 + i)(2 - i)$ bằng:',opts:['A. $3$','B. $5$','C. $4 + i$','D. $4 - i$'],ans:1,sol:'$(2+i)(2-i) = 4 - i^2 = 4 - (-1) = 5$.'},
+  {q:'Trong dạng lượng giác, môđun của $z = -1 + i$ là:',opts:['A. $1$','B. $\\sqrt{2}$','C. $2$','D. $\\sqrt{3}$'],ans:1,sol:'$|z| = \\sqrt{(-1)^2 + 1^2} = \\sqrt{2}$.'},
 ],
 '1.2_NB':[
-  {q:'Ma trận A cấp m×n có bao nhiêu phần tử?',opts:['A. m+n','B. m−n','C. mn','D. m/n'],ans:2,sol:'Ma trận cấp m×n có m hàng và n cột, tổng cộng m×n phần tử.'},
-  {q:'Ma trận vuông cấp n có số hàng và số cột đều bằng:',opts:['A. n−1','B. n+1','C. n','D. n²'],ans:2,sol:'Ma trận vuông cấp n: số hàng = số cột = n.'},
-  {q:'Ma trận đơn vị I_n có đặc điểm:',opts:['A. Tất cả phần tử bằng 1','B. Đường chéo chính = 1, còn lại = 0','C. Tất cả bằng 0','D. Định thức bằng n'],ans:1,sol:'I_n: a_ii = 1 với mọi i, a_ij = 0 với i ≠ j.'},
-  {q:'Định thức của ma trận đơn vị I_n bằng:',opts:['A. 0','B. n','C. 1','D. n!'],ans:2,sol:'det(I_n) = 1.'},
-  {q:'A cấp 2×3, B cấp 3×4. Tích AB có cấp:',opts:['A. 2×4','B. 3×3','C. 2×3','D. Không xác định'],ans:0,sol:'Số cột A = số hàng B = 3. Kết quả AB cấp 2×4.'},
-  {q:'det([[1,2],[3,4]]) bằng:',opts:['A. 10','B. −2','C. 2','D. −10'],ans:1,sol:'det = 1×4 − 2×3 = 4 − 6 = −2.'},
-  {q:'A^T của A = [[1,2],[3,4]] là:',opts:['A. [[1,3],[2,4]]','B. [[4,3],[2,1]]','C. [[1,2],[3,4]]','D. [[−1,−2],[−3,−4]]'],ans:0,sol:'Chuyển vị đổi hàng thành cột: A^T = [[1,3],[2,4]].'},
-  {q:'Ma trận với det = 0 gọi là:',opts:['A. Ma trận đơn vị','B. Ma trận khả nghịch','C. Ma trận suy biến','D. Ma trận đối xứng'],ans:2,sol:'Ma trận suy biến (singular) có det = 0.'},
-  {q:'det(AB) = ?',opts:['A. det(A)+det(B)','B. det(A)×det(B)','C. det(A)−det(B)','D. det(A)/det(B)'],ans:1,sol:'Định lý nhân định thức: det(AB) = det(A)·det(B).'},
-  {q:'det(A^T) bằng:',opts:['A. −det(A)','B. 1/det(A)','C. det(A)','D. 0'],ans:2,sol:'det(A^T) = det(A).'},
+  {q:'Ma trận $A$ cấp $m \\times n$ có bao nhiêu phần tử?',opts:['A. $m+n$','B. $m-n$','C. $mn$','D. $m/n$'],ans:2,sol:'Ma trận cấp $m \\times n$ có $m$ hàng và $n$ cột, tổng cộng $m \\times n$ phần tử.'},
+  {q:'Ma trận vuông cấp $n$ có số hàng và số cột đều bằng:',opts:['A. $n-1$','B. $n+1$','C. $n$','D. $n^2$'],ans:2,sol:'Ma trận vuông cấp $n$: số hàng = số cột = $n$.'},
+  {q:'Ma trận đơn vị $I_n$ có đặc điểm:',opts:['A. Tất cả phần tử bằng 1','B. Đường chéo chính = 1, còn lại = 0','C. Tất cả bằng 0','D. Định thức bằng $n$'],ans:1,sol:'$I_n$: $a_{ii} = 1$ với mọi $i$, $a_{ij} = 0$ với $i \\neq j$.'},
+  {q:'Định thức của ma trận đơn vị $I_n$ bằng:',opts:['A. $0$','B. $n$','C. $1$','D. $n!$'],ans:2,sol:'$\\det(I_n) = 1$.'},
+  {q:'$A$ cấp $2 \\times 3$, $B$ cấp $3 \\times 4$. Tích $AB$ có cấp:',opts:['A. $2 \\times 4$','B. $3 \\times 3$','C. $2 \\times 3$','D. Không xác định'],ans:0,sol:'Số cột $A$ = số hàng $B$ = 3. Kết quả $AB$ cấp $2 \\times 4$.'},
+  {q:'$\\det\\begin{bmatrix} 1 & 2 \\\\ 3 & 4 \\end{bmatrix}$ bằng:',opts:['A. $10$','B. $-2$','C. $2$','D. $-10$'],ans:1,sol:'$\\det = 1 \\times 4 - 2 \\times 3 = 4 - 6 = -2$.'},
+  {q:'$A^T$ của $A = \\begin{bmatrix} 1 & 2 \\\\ 3 & 4 \\end{bmatrix}$ là:',opts:['A. $\\begin{bmatrix} 1 & 3 \\\\ 2 & 4 \\end{bmatrix}$','B. $\\begin{bmatrix} 4 & 3 \\\\ 2 & 1 \\end{bmatrix}$','C. $\\begin{bmatrix} 1 & 2 \\\\ 3 & 4 \\end{bmatrix}$','D. $\\begin{bmatrix} -1 & -2 \\\\ -3 & -4 \\end{bmatrix}$'],ans:0,sol:'Chuyển vị đổi hàng thành cột: $A^T = \\begin{bmatrix} 1 & 3 \\\\ 2 & 4 \\end{bmatrix}$.'},
+  {q:'Ma trận với $\\det = 0$ gọi là:',opts:['A. Ma trận đơn vị','B. Ma trận khả nghịch','C. Ma trận suy biến','D. Ma trận đối xứng'],ans:2,sol:'Ma trận suy biến (singular) có $\\det = 0$.'},
+  {q:'$\\det(AB) = ?$',opts:['A. $\\det(A)+\\det(B)$','B. $\\det(A) \\cdot \\det(B)$','C. $\\det(A)-\\det(B)$','D. $\\det(A)/\\det(B)$'],ans:1,sol:'Định lý nhân định thức: $\\det(AB) = \\det(A) \\cdot \\det(B)$.'},
+  {q:'$\\det(A^T)$ bằng:',opts:['A. $-\\det(A)$','B. $1/\\det(A)$','C. $\\det(A)$','D. $0$'],ans:2,sol:'$\\det(A^T) = \\det(A)$.'},
 ],
 '1.2_TH':[
-  {q:'Tính det([[2,1],[5,3]]):',opts:['A. 1','B. −1','C. 11','D. 6'],ans:0,sol:'det = 2×3 − 1×5 = 6 − 5 = 1.'},
-  {q:'Ma trận nghịch đảo của A = [[2,1],[5,3]] là:',opts:['A. [[3,−1],[−5,2]]','B. [[3,1],[5,2]]','C. [[−3,1],[5,−2]]','D. [[2,−1],[−5,3]]'],ans:0,sol:'det(A) = 1. A⁻¹ = [[d,−b],[−c,a]] / det = [[3,−1],[−5,2]].'},
-  {q:'det([[1,2,3],[4,5,6],[7,8,9]]) bằng:',opts:['A. 0','B. 1','C. −1','D. 6'],ans:0,sol:'Hàng 3 = hàng 1 + hàng 2 (trường hợp đặc biệt), nên det = 0.'},
-  {q:'Hoán vị 2 hàng của ma trận làm định thức:',opts:['A. Không đổi','B. Đổi dấu','C. Nhân đôi','D. Bằng 0'],ans:1,sol:'Hoán vị hai hàng (hay hai cột) làm định thức đổi dấu.'},
-  {q:'Hạng của [[1,2],[2,4]] bằng:',opts:['A. 2','B. 0','C. 1','D. −1'],ans:2,sol:'Hàng 2 = 2×hàng 1 → phụ thuộc tuyến tính → rank = 1.'},
-  {q:'Cộng hai ma trận A và B yêu cầu:',opts:['A. A và B cùng cấp','B. số cột A = số hàng B','C. A là vuông','D. det(A) ≠ 0'],ans:0,sol:'Phép cộng ma trận yêu cầu hai ma trận cùng cấp.'},
-  {q:'A² với A = [[1,1],[0,1]] là:',opts:['A. [[1,2],[0,1]]','B. [[1,1],[0,1]]','C. [[2,1],[0,2]]','D. [[1,0],[0,1]]'],ans:0,sol:'A² = [[1+0,1+1],[0,0+1]] = [[1,2],[0,1]].'},
-  {q:'Ma trận vuông khả nghịch khi và chỉ khi:',opts:['A. det = 0','B. det ≠ 0','C. trace = 0','D. A = A^T'],ans:1,sol:'Điều kiện khả nghịch: det(A) ≠ 0.'},
-  {q:'det(kA) với A cấp n × n bằng:',opts:['A. k·det(A)','B. k²·det(A)','C. kⁿ·det(A)','D. det(A)'],ans:2,sol:'Nhân k vào mỗi hàng (có n hàng): det(kA) = kⁿ·det(A).'},
-  {q:'Phần tử bù đại số A₁₂ của [[a,b],[c,d]] bằng:',opts:['A. d','B. −c','C. −b','D. a'],ans:1,sol:'A₁₂ = (−1)^(1+2)·M₁₂ = −M₁₂ = −c.'},
+  {q:'Tính $\\det\\begin{bmatrix} 2 & 1 \\\\ 5 & 3 \\end{bmatrix}$:',opts:['A. $1$','B. $-1$','C. $11$','D. $6$'],ans:0,sol:'$\\det = 2 \\times 3 - 1 \\times 5 = 6 - 5 = 1$.'},
+  {q:'Ma trận nghịch đảo của $A = \\begin{bmatrix} 2 & 1 \\\\ 5 & 3 \\end{bmatrix}$ là:',opts:['A. $\\begin{bmatrix} 3 & -1 \\\\ -5 & 2 \\end{bmatrix}$','B. $\\begin{bmatrix} 3 & 1 \\\\ 5 & 2 \\end{bmatrix}$','C. $\\begin{bmatrix} -3 & 1 \\\\ 5 & -2 \\end{bmatrix}$','D. $\\begin{bmatrix} 2 & -1 \\\\ -5 & 3 \\end{bmatrix}$'],ans:0,sol:'$\\det(A) = 1$. $A^{-1} = \\frac{1}{\\det}\\begin{bmatrix} d & -b \\\\ -c & a \\end{bmatrix} = \\begin{bmatrix} 3 & -1 \\\\ -5 & 2 \\end{bmatrix}$.'},
+  {q:'$\\det\\begin{bmatrix} 1 & 2 & 3 \\\\ 4 & 5 & 6 \\\\ 7 & 8 & 9 \\end{bmatrix}$ bằng:',opts:['A. $0$','B. $1$','C. $-1$','D. $6$'],ans:0,sol:'Hàng 3 = hàng 1 + hàng 2 (phụ thuộc tuyến tính), nên $\\det = 0$.'},
+  {q:'Hoán vị 2 hàng của ma trận làm định thức:',opts:['A. Không đổi','B. Đổi dấu','C. Nhân đôi','D. Bằng $0$'],ans:1,sol:'Hoán vị hai hàng (hay hai cột) làm định thức đổi dấu.'},
+  {q:'Hạng của $\\begin{bmatrix} 1 & 2 \\\\ 2 & 4 \\end{bmatrix}$ bằng:',opts:['A. $2$','B. $0$','C. $1$','D. $-1$'],ans:2,sol:'$H_2 = 2H_1 \\Rightarrow$ phụ thuộc tuyến tính $\\Rightarrow \\text{rank} = 1$.'},
+  {q:'Cộng hai ma trận $A$ và $B$ yêu cầu:',opts:['A. $A$ và $B$ cùng cấp','B. số cột $A$ = số hàng $B$','C. $A$ là vuông','D. $\\det(A) \\neq 0$'],ans:0,sol:'Phép cộng ma trận yêu cầu hai ma trận cùng cấp.'},
+  {q:'$A^2$ với $A = \\begin{bmatrix} 1 & 1 \\\\ 0 & 1 \\end{bmatrix}$ là:',opts:['A. $\\begin{bmatrix} 1 & 2 \\\\ 0 & 1 \\end{bmatrix}$','B. $\\begin{bmatrix} 1 & 1 \\\\ 0 & 1 \\end{bmatrix}$','C. $\\begin{bmatrix} 2 & 1 \\\\ 0 & 2 \\end{bmatrix}$','D. $\\begin{bmatrix} 1 & 0 \\\\ 0 & 1 \\end{bmatrix}$'],ans:0,sol:'$A^2 = \\begin{bmatrix} 1+0 & 1+1 \\\\ 0 & 0+1 \\end{bmatrix} = \\begin{bmatrix} 1 & 2 \\\\ 0 & 1 \\end{bmatrix}$.'},
+  {q:'Ma trận vuông khả nghịch khi và chỉ khi:',opts:['A. $\\det = 0$','B. $\\det \\neq 0$','C. $\\text{trace} = 0$','D. $A = A^T$'],ans:1,sol:'Điều kiện khả nghịch: $\\det(A) \\neq 0$.'},
+  {q:'$\\det(kA)$ với $A$ cấp $n \\times n$ bằng:',opts:['A. $k \\cdot \\det(A)$','B. $k^2 \\cdot \\det(A)$','C. $k^n \\cdot \\det(A)$','D. $\\det(A)$'],ans:2,sol:'Nhân $k$ vào mỗi hàng (có $n$ hàng): $\\det(kA) = k^n \\cdot \\det(A)$.'},
+  {q:'Phần tử bù đại số $A_{12}$ của $\\begin{bmatrix} a & b \\\\ c & d \\end{bmatrix}$ bằng:',opts:['A. $d$','B. $-c$','C. $-b$','D. $a$'],ans:1,sol:'$A_{12} = (-1)^{1+2} \\cdot M_{12} = -M_{12} = -c$.'},
 ],
 '1.2_VD':[
-  {q:'Hạng của ma trận A = [[1,2,3],[2,4,6],[3,6,9]] bằng:',opts:['A. 3','B. 2','C. 1','D. 0'],ans:2,sol:'Ba hàng tỉ lệ nhau (hàng 2 = 2×h.1, hàng 3 = 3×h.1) nên rank = 1.'},
-  {q:'Tìm x để det([[x,2],[3,x]]) = 0:',opts:['A. x = ±√6','B. x = ±2','C. x = ±3','D. x = ±1'],ans:0,sol:'det = x² − 6 = 0 → x = ±√6.'},
+  {q:'Hạng của ma trận $A = \\begin{bmatrix} 1 & 2 & 3 \\\\ 2 & 4 & 6 \\\\ 3 & 6 & 9 \\end{bmatrix}$ bằng:',opts:['A. $3$','B. $2$','C. $1$','D. $0$'],ans:2,sol:'Ba hàng tỉ lệ nhau ($H_2 = 2H_1$, $H_3 = 3H_1$) nên $\\text{rank} = 1$.'},
+  {q:'Tìm $x$ để $\\det\\begin{bmatrix} x & 2 \\\\ 3 & x \\end{bmatrix} = 0$:',opts:['A. $x = \\pm\\sqrt{6}$','B. $x = \\pm 2$','C. $x = \\pm 3$','D. $x = \\pm 1$'],ans:0,sol:'$\\det = x^2 - 6 = 0 \\Rightarrow x = \\pm\\sqrt{6}$.'},
 ],
 '1.2_VDC':[
-  {q:'det(A) = 4, A cấp 3×3. Tính det(3A):',opts:['A. 12','B. 36','C. 108','D. 324'],ans:2,sol:'det(3A) = 3³·det(A) = 27·4 = 108.'},
-  {q:'det(A)=2, det(B)=−3, A và B cấp 3×3. Tính det(A²B^T):',opts:['A. −12','B. 12','C. −6','D. 6'],ans:0,sol:'det(A²B^T) = det(A²)·det(B^T) = det(A)²·det(B) = 4·(−3) = −12.'},
+  {q:'$\\det(A) = 4$, $A$ cấp $3 \\times 3$. Tính $\\det(3A)$:',opts:['A. $12$','B. $36$','C. $108$','D. $324$'],ans:2,sol:'$\\det(3A) = 3^3 \\cdot \\det(A) = 27 \\cdot 4 = 108$.'},
+  {q:'$\\det(A)=2, \\det(B)=-3$, $A$ và $B$ cấp $3 \\times 3$. Tính $\\det(A^2 B^T)$:',opts:['A. $-12$','B. $12$','C. $-6$','D. $6$'],ans:0,sol:'$\\det(A^2 B^T) = \\det(A^2) \\cdot \\det(B^T) = \\det(A)^2 \\cdot \\det(B) = 4 \\cdot (-3) = -12$.'},
 ],
 '1.3_TH':[
-  {q:'Hệ x+y=3, 2x+2y=6 có bao nhiêu nghiệm?',opts:['A. Vô nghiệm','B. Nghiệm duy nhất','C. Vô số nghiệm','D. 2 nghiệm'],ans:2,sol:'PT2 = 2×PT1 → hệ có vô số nghiệm (1 tham số tự do).'},
-  {q:'Hệ Ax=b có nghiệm khi và chỉ khi:',opts:['A. det(A)≠0','B. rank(A)=rank(A|b)','C. rank(A)=n','D. b=0'],ans:1,sol:'Điều kiện tương thích: rank(A) = rank(A|b).'},
+  {q:'Hệ $x+y=3, 2x+2y=6$ có bao nhiêu nghiệm?',opts:['A. Vô nghiệm','B. Nghiệm duy nhất','C. Vô số nghiệm','D. $2$ nghiệm'],ans:2,sol:'$PT_2 = 2 \\times PT_1 \\Rightarrow$ hệ có vô số nghiệm (1 tham số tự do).'},
+  {q:'Hệ $Ax=b$ có nghiệm khi và chỉ khi:',opts:['A. $\\det(A) \\neq 0$','B. $\\text{rank}(A) = \\text{rank}(A|b)$','C. $\\text{rank}(A) = n$','D. $b = 0$'],ans:1,sol:'Định lý Kronecker-Capelli: hệ tương thích khi $\\text{rank}(A) = \\text{rank}(A|b)$.'},
 ],
 '1.3_VD':[
-  {q:'Giải hệ x+2y=5, 3x−y=8. Nghiệm là:',opts:['A. x=3, y=1','B. x=1, y=2','C. x=2, y=1.5','D. x=3, y=2'],ans:0,sol:'Từ PT1: x=5−2y. Thế vào PT2: 3(5−2y)−y=8 → 15−7y=8 → y=1, x=3.'},
-  {q:'Hệ Ax=0 với det(A)=0 có:',opts:['A. Chỉ nghiệm tầm thường','B. Vô số nghiệm','C. Vô nghiệm','D. Đúng 2 nghiệm'],ans:1,sol:'det(A)=0 → hệ thuần nhất có nghiệm không tầm thường → vô số nghiệm.'},
+  {q:'Giải hệ $x+2y=5, 3x-y=8$. Nghiệm là:',opts:['A. $x=3, y=1$','B. $x=1, y=2$','C. $x=2, y=1.5$','D. $x=3, y=2$'],ans:0,sol:'Từ $PT_1$: $x = 5-2y$. Thế vào $PT_2$: $3(5-2y)-y = 8 \\Rightarrow 15-7y = 8 \\Rightarrow y=1, x=3$.'},
+  {q:'Hệ $Ax=0$ với $\\det(A)=0$ có:',opts:['A. Chỉ nghiệm tầm thường','B. Vô số nghiệm','C. Vô nghiệm','D. Đúng $2$ nghiệm'],ans:1,sol:'$\\det(A)=0 \\Rightarrow$ hệ thuần nhất có nghiệm không tầm thường $\\Rightarrow$ vô số nghiệm.'},
 ],
 '1.3_VDC':[
-  {q:'Hệ 3×3, rank(A)=rank(A|b)=2. Số ẩn tự do là:',opts:['A. 0','B. 1','C. 2','D. 3'],ans:1,sol:'Số ẩn tự do = n − rank(A) = 3 − 2 = 1.'},
-  {q:'Quy tắc Cramer áp dụng khi:',opts:['A. Hệ vô số nghiệm','B. Ma trận vuông, det≠0','C. Hệ thuần nhất','D. Số PT > số ẩn'],ans:1,sol:'Cramer áp dụng cho hệ vuông (n ẩn, n PT) với det(A)≠0.'},
+  {q:'Hệ $3 \\times 3$, $\\text{rank}(A) = \\text{rank}(A|b) = 2$. Số ẩn tự do là:',opts:['A. $0$','B. $1$','C. $2$','D. $3$'],ans:1,sol:'Số ẩn tự do = $n - \\text{rank}(A) = 3 - 2 = 1$.'},
+  {q:'Quy tắc Cramer áp dụng khi:',opts:['A. Hệ vô số nghiệm','B. Ma trận vuông, $\\det \\neq 0$','C. Hệ thuần nhất','D. Số PT > số ẩn'],ans:1,sol:'Cramer áp dụng cho hệ vuông ($n$ ẩn, $n$ PT) với $\\det(A) \\neq 0$.'},
 ],
 '2.1_NB':[
-  {q:'Không gian vectơ thực thỏa bao nhiêu tiên đề?',opts:['A. 6','B. 8','C. 10','D. 4'],ans:1,sol:'8 tiên đề: 4 cho phép cộng vectơ, 4 cho nhân vô hướng.'},
-  {q:'Hệ {v₁,...,vₖ} phụ thuộc tuyến tính khi:',opts:['A. Chỉ λ_i=0 thỏa Σλᵢvᵢ=0','B. ∃ hệ số ≠(0,...,0): Σλᵢvᵢ=0','C. Các vectơ vuông góc','D. Tổng các vectơ = 0'],ans:1,sol:'Phụ thuộc tuyến tính: tồn tại hệ số không đồng thời bằng 0 cho tổ hợp tuyến tính = 0.'},
-  {q:'Vectơ không 0 có quan hệ với mọi hệ vectơ:',opts:['A. Độc lập','B. Phụ thuộc','C. Không liên quan','D. Trực giao'],ans:1,sol:'Bất kỳ hệ nào chứa vectơ không đều phụ thuộc tuyến tính.'},
-  {q:'Không gian con W của V cần:',opts:['A. 0∈W và đóng với + và nhân vô hướng','B. Chỉ cần 0∈W','C. Phải là toàn bộ V','D. Hữu hạn phần tử'],ans:0,sol:'Không gian con: chứa 0, đóng với cộng vectơ và nhân vô hướng.'},
-  {q:'u và v độc lập tuyến tính khi:',opts:['A. u+v=0','B. u=v','C. Không vectơ nào là bội của vectơ kia','D. u·v=0'],ans:2,sol:'Độc lập tuyến tính ⟺ không vectơ nào là bội của vectơ kia.'},
+  {q:'Không gian vectơ thực thỏa bao nhiêu tiên đề?',opts:['A. $6$','B. $8$','C. $10$','D. $4$'],ans:1,sol:'$8$ tiên đề: $4$ cho phép cộng vectơ, $4$ cho nhân vô hướng.'},
+  {q:'Hệ $\\{v_1,\\dots,v_k\\}$ phụ thuộc tuyến tính khi:',opts:['A. Chỉ $\\lambda_i=0$ thỏa $\\sum\\lambda_i v_i = 0$','B. $\\exists$ hệ số $\\neq (0,\\dots,0): \\sum\\lambda_i v_i = 0$','C. Các vectơ vuông góc','D. Tổng các vectơ = $0$'],ans:1,sol:'Phụ thuộc tuyến tính: tồn tại hệ số không đồng thời bằng $0$ cho tổ hợp tuyến tính $= 0$.'},
+  {q:'Vectơ không $0$ có quan hệ với mọi hệ vectơ:',opts:['A. Độc lập','B. Phụ thuộc','C. Không liên quan','D. Trực giao'],ans:1,sol:'Bất kỳ hệ nào chứa vectơ không đều phụ thuộc tuyến tính.'},
+  {q:'Không gian con $W$ của $V$ cần:',opts:['A. $0 \\in W$ và đóng với phép $+$ và nhân vô hướng','B. Chỉ cần $0 \\in W$','C. Phải là toàn bộ $V$','D. Hữu hạn phần tử'],ans:0,sol:'Không gian con: chứa $0$, đóng với cộng vectơ và nhân vô hướng.'},
+  {q:'$u$ và $v$ độc lập tuyến tính khi:',opts:['A. $u+v=0$','B. $u=v$','C. Không vectơ nào là bội của vectơ kia','D. $u \\cdot v=0$'],ans:2,sol:'Độc lập tuyến tính $\\Leftrightarrow$ không vectơ nào là bội của vectơ kia.'},
 ],
 '2.1_TH':[
-  {q:'{(1,2),(2,4),(3,6)} trong ℝ² là:',opts:['A. Độc lập','B. Phụ thuộc','C. Không xác định','D. Chỉ từng đôi phụ thuộc'],ans:1,sol:'(2,4)=2(1,2), (3,6)=3(1,2) → phụ thuộc. Ngoài ra, mọi 3 vectơ trong ℝ² đều phụ thuộc.'},
-  {q:'{e₁=(1,0,0), e₂=(0,1,0), e₃=(0,0,1)} trong ℝ³ là:',opts:['A. Phụ thuộc','B. Độc lập','C. Không hợp lệ','D. Toàn vectơ không'],ans:1,sol:'Đây là cơ sở chuẩn của ℝ³, độc lập tuyến tính.'},
+  {q:'$\\{(1,2),(2,4),(3,6)\\}$ trong $\\mathbb{R}^2$ là:',opts:['A. Độc lập','B. Phụ thuộc','C. Không xác định','D. Chỉ từng đôi phụ thuộc'],ans:1,sol:'$(2,4)=2(1,2)$, $(3,6)=3(1,2) \\Rightarrow$ phụ thuộc. Ngoài ra, mọi $3$ vectơ trong $\\mathbb{R}^2$ đều phụ thuộc.'},
+  {q:'$\\{e_1=(1,0,0), e_2=(0,1,0), e_3=(0,0,1)\\}$ trong $\\mathbb{R}^3$ là:',opts:['A. Phụ thuộc','B. Độc lập','C. Không hợp lệ','D. Toàn vectơ không'],ans:1,sol:'Đây là cơ sở chuẩn của $\\mathbb{R}^3$, độc lập tuyến tính.'},
 ],
 '2.1_VD':[
-  {q:'{v₁=(1,1,0), v₂=(0,1,1), v₃=(1,0,−1)} có độc lập không?',opts:['A. Độc lập','B. Phụ thuộc','C. Cần thêm thông tin','D. Phụ thuộc chỉ trong ℝ²'],ans:1,sol:'v₁−v₂−v₃ = (1,1,0)−(0,1,1)−(1,0,−1) = (0,0,0) → phụ thuộc.'},
-  {q:'Giá trị t để {(1,2),(t,1)} phụ thuộc tuyến tính:',opts:['A. t=1/2','B. t=2','C. t=0','D. t=−1/2'],ans:0,sol:'Phụ thuộc ⟺ det=0: 1×1−2×t=0 → t=1/2.'},
-  {q:'Không gian sinh bởi {(1,0,1),(0,1,0)} trong ℝ³ có số chiều:',opts:['A. 3','B. 2','C. 1','D. 0'],ans:1,sol:'Hai vectơ không tỉ lệ → sinh không gian con chiều 2.'},
-  {q:'4 vectơ bất kỳ trong ℝ³ luôn:',opts:['A. Độc lập tuyến tính','B. Phụ thuộc tuyến tính','C. Tạo cơ sở','D. Có thể độc lập hay phụ thuộc'],ans:1,sol:'dim(ℝ³)=3 nên mọi tập gồm 4+ vectơ đều phụ thuộc tuyến tính.'},
+  {q:'$\\{v_1=(1,1,0), v_2=(0,1,1), v_3=(1,0,-1)\\}$ có độc lập không?',opts:['A. Độc lập','B. Phụ thuộc','C. Cần thêm thông tin','D. Phụ thuộc chỉ trong $\\mathbb{R}^2$'],ans:1,sol:'$v_1 - v_2 - v_3 = (1,1,0) - (0,1,1) - (1,0,-1) = (0,0,0) \\Rightarrow$ phụ thuộc.'},
+  {q:'Giá trị $t$ để $\\{(1,2),(t,1)\\}$ phụ thuộc tuyến tính:',opts:['A. $t=1/2$','B. $t=2$','C. $t=0$','D. $t=-1/2$'],ans:0,sol:'Phụ thuộc $\\Leftrightarrow \\det=0$: $1 \\times 1 - 2 \\times t = 0 \\Rightarrow t=1/2$.'},
+  {q:'Không gian sinh bởi $\\{(1,0,1),(0,1,0)\\}$ trong $\\mathbb{R}^3$ có số chiều:',opts:['A. $3$','B. $2$','C. $1$','D. $0$'],ans:1,sol:'Hai vectơ không tỉ lệ $\\Rightarrow$ sinh không gian con chiều $2$.'},
+  {q:'$4$ vectơ bất kỳ trong $\\mathbb{R}^3$ luôn:',opts:['A. Độc lập tuyến tính','B. Phụ thuộc tuyến tính','C. Tạo cơ sở','D. Có thể độc lập hay phụ thuộc'],ans:1,sol:'$\\dim(\\mathbb{R}^3)=3$ nên mọi tập gồm $\\geq 4$ vectơ đều phụ thuộc tuyến tính.'},
 ],
 '2.2_NB':[
-  {q:'dim(ℝⁿ) bằng:',opts:['A. n/2','B. n²','C. n','D. 2n'],ans:2,sol:'Cơ sở chuẩn gồm n vectơ nên dim(ℝⁿ) = n.'},
-  {q:'Cơ sở của không gian vectơ V là:',opts:['A. Chỉ cần hệ sinh V','B. Chỉ cần độc lập tuyến tính','C. Hệ sinh và độc lập tuyến tính','D. Tập con bất kỳ'],ans:2,sol:'Cơ sở = hệ vừa sinh V vừa độc lập tuyến tính.'},
-  {q:'V có cơ sở 5 phần tử thì dim(V) = ?',opts:['A. 4','B. 5','C. 6','D. 25'],ans:1,sol:'Số chiều = số phần tử cơ sở = 5.'},
-  {q:'Hạng của ma trận A là:',opts:['A. Số cột','B. Số hàng','C. Số hàng khác không sau khử Gauss','D. min(m,n)'],ans:2,sol:'Hạng = số hàng khác không trong dạng bậc thang.'},
-  {q:'Hạng của ma trận không bằng:',opts:['A. 1','B. Số hàng','C. 0','D. Không xác định'],ans:2,sol:'Ma trận không có tất cả phần tử = 0 nên hạng = 0.'},
-  {q:'rank(A) = n (số cột) ⟺ các cột A:',opts:['A. Phụ thuộc','B. Độc lập','C. Bằng nhau','D. Tạo cơ sở ℝⁿ'],ans:1,sol:'rank = số cột ⟺ các cột độc lập tuyến tính.'},
-  {q:'dim(Ker A) với A cấp m×n bằng:',opts:['A. rank(A)','B. m−rank(A)','C. n−rank(A)','D. m+n−rank(A)'],ans:2,sol:'Định lý số chiều: dim(Ker A) = n − rank(A).'},
-  {q:'rank(A) = rank(A^T) vì:',opts:['A. Hàng A = Cột A^T','B. Hạng hàng = Hạng cột','C. det không đổi','D. Cùng cấp'],ans:1,sol:'Hạng hàng luôn bằng hạng cột nên rank(A) = rank(A^T).'},
+  {q:'$\\dim(\\mathbb{R}^n)$ bằng:',opts:['A. $n/2$','B. $n^2$','C. $n$','D. $2n$'],ans:2,sol:'Cơ sở chuẩn gồm $n$ vectơ nên $\\dim(\\mathbb{R}^n) = n$.'},
+  {q:'Cơ sở của không gian vectơ $V$ là:',opts:['A. Chỉ cần hệ sinh $V$','B. Chỉ cần độc lập tuyến tính','C. Hệ sinh và độc lập tuyến tính','D. Tập con bất kỳ'],ans:2,sol:'Cơ sở = hệ vừa sinh $V$ vừa độc lập tuyến tính.'},
+  {q:'$V$ có cơ sở $5$ phần tử thì $\\dim(V) = ?$',opts:['A. $4$','B. $5$','C. $6$','D. $25$'],ans:1,sol:'Số chiều = số phần tử của cơ sở = $5$.'},
+  {q:'Hạng của ma trận $A$ là:',opts:['A. Số cột','B. Số hàng','C. Số hàng khác không sau khử Gauss','D. $\\min(m,n)$'],ans:2,sol:'Hạng = số hàng khác không trong dạng bậc thang.'},
+  {q:'Hạng của ma trận không bằng:',opts:['A. $1$','B. Số hàng','C. $0$','D. Không xác định'],ans:2,sol:'Ma trận không có tất cả phần tử $= 0$ nên hạng $= 0$.'},
+  {q:'$\\text{rank}(A) = n$ (số cột) $\\Leftrightarrow$ các cột $A$:',opts:['A. Phụ thuộc','B. Độc lập','C. Bằng nhau','D. Tạo cơ sở $\\mathbb{R}^n$'],ans:1,sol:'$\\text{rank} =$ số cột $\\Leftrightarrow$ các cột độc lập tuyến tính.'},
+  {q:'$\\dim(\\ker A)$ với $A$ cấp $m \\times n$ bằng:',opts:['A. $\\text{rank}(A)$','B. $m - \\text{rank}(A)$','C. $n - \\text{rank}(A)$','D. $m+n - \\text{rank}(A)$'],ans:2,sol:'Định lý số chiều: $\\dim(\\ker A) = n - \\text{rank}(A)$.'},
+  {q:'$\\text{rank}(A) = \\text{rank}(A^T)$ vì:',opts:['A. Hàng $A$ = Cột $A^T$','B. Hạng hàng = Hạng cột','C. $\\det$ không đổi','D. Cùng cấp'],ans:1,sol:'Hạng hàng luôn bằng hạng cột nên $\\text{rank}(A) = \\text{rank}(A^T)$.'},
 ],
 '2.2_TH':[
-  {q:'Hạng của A = [[1,2,3],[2,4,6],[0,1,1]]:',opts:['A. 3','B. 2','C. 1','D. 0'],ans:1,sol:'H.2=2×H.1. Loại H.2, còn [[1,2,3],[0,1,1]] → 2 hàng độc lập → rank=2.'},
-  {q:'dim(Im(A)) + dim(Ker(A)) bằng:',opts:['A. m (số hàng)','B. n (số cột)','C. m+n','D. rank(A)'],ans:1,sol:'Định lý rank-nullity: dim(Im) + dim(Ker) = n.'},
-  {q:'rank(A)=rank(A|b)=r < n thì hệ Ax=b có:',opts:['A. Vô nghiệm','B. Nghiệm duy nhất','C. Vô số nghiệm với n−r tham số','D. Đúng r nghiệm'],ans:2,sol:'Tương thích với r < n → vô số nghiệm, n−r ẩn tự do.'},
-  {q:'Không gian con sinh bởi một vectơ ≠ 0 có chiều:',opts:['A. 0','B. 1','C. 2','D. Bằng độ dài'],ans:1,sol:'Span{v} với v≠0 là đường thẳng qua gốc, chiều = 1.'},
-  {q:'A cấp 3×5, dim(Ker A) tối đa là:',opts:['A. 3','B. 4','C. 5','D. 2'],ans:2,sol:'dim(Ker) = n − rank. rank ≥ 0 nên dim(Ker) ≤ 5.'},
-  {q:'Cơ sở của không gian cột A = [[1,0],[0,1],[1,1]] là:',opts:['A. {(1,0,1),(0,1,1)}','B. {(1,0,0),(0,1,0)}','C. {(1,0,0),(0,1,0),(0,0,1)}','D. {(1,1,2)}'],ans:0,sol:'Hai cột (1,0,1) và (0,1,1) độc lập → cơ sở không gian cột.'},
+  {q:'Hạng của $A = \\begin{bmatrix} 1 & 2 & 3 \\\\ 2 & 4 & 6 \\\\ 0 & 1 & 1 \\end{bmatrix}$:',opts:['A. $3$','B. $2$','C. $1$','D. $0$'],ans:1,sol:'$H_2 = 2H_1$. Loại $H_2$, còn $\\begin{bmatrix} 1 & 2 & 3 \\\\ 0 & 1 & 1 \\end{bmatrix} \\Rightarrow 2$ hàng độc lập $\\Rightarrow \\text{rank}=2$.'},
+  {q:'$\\dim(\\text{Im}(A)) + \\dim(\\ker(A))$ bằng:',opts:['A. $m$ (số hàng)','B. $n$ (số cột)','C. $m+n$','D. $\\text{rank}(A)$'],ans:1,sol:'Định lý rank-nullity: $\\dim(\\text{Im}) + \\dim(\\ker) = n$.'},
+  {q:'$\\text{rank}(A) = \\text{rank}(A|b) = r < n$ thì hệ $Ax=b$ có:',opts:['A. Vô nghiệm','B. Nghiệm duy nhất','C. Vô số nghiệm với $n-r$ tham số','D. Đúng $r$ nghiệm'],ans:2,sol:'Tương thích với $r < n \\Rightarrow$ vô số nghiệm, $n-r$ ẩn tự do.'},
+  {q:'Không gian con sinh bởi một vectơ $v \\neq 0$ có chiều:',opts:['A. $0$','B. $1$','C. $2$','D. Bằng độ dài'],ans:1,sol:'$\\text{span}\\{v\\}$ với $v \\neq 0$ là đường thẳng qua gốc, chiều $= 1$.'},
+  {q:'$A$ cấp $3 \\times 5$, $\\dim(\\ker A)$ tối đa là:',opts:['A. $3$','B. $4$','C. $5$','D. $2$'],ans:2,sol:'$\\dim(\\ker) = n - \\text{rank}$. $\\text{rank} \\geq 0$ nên $\\dim(\\ker) \\leq 5$.'},
+  {q:'Cơ sở của không gian cột $A = \\begin{bmatrix} 1 & 0 \\\\ 0 & 1 \\\\ 1 & 1 \\end{bmatrix}$ là:',opts:['A. $\\{(1,0,1),(0,1,1)\\}$','B. $\\{(1,0,0),(0,1,0)\\}$','C. $\\{(1,0,0),(0,1,0),(0,0,1)\\}$','D. $\\{(1,1,2)\\}$'],ans:0,sol:'Hai cột $(1,0,1)$ và $(0,1,1)$ độc lập $\\Rightarrow$ tạo thành cơ sở không gian cột.'},
 ],
 '2.2_VD':[
-  {q:'W = {(x,y,z): x+y+z=0}. Cơ sở và số chiều?',opts:['A. Chiều 2, cơ sở {(1,−1,0),(1,0,−1)}','B. Chiều 1','C. Chiều 3','D. Chiều 2, cơ sở {(1,0,0),(0,1,0)}'],ans:0,sol:'x=−y−z. Đặt y=s, z=t: v=s(1,−1,0)+t(1,0,−1). Hai vectơ độc lập → dim=2.'},
-  {q:'A cấp 4×6, rank(A)=3. dim(Ker A)=?',opts:['A. 3','B. 4','C. 1','D. 2'],ans:0,sol:'dim(Ker) = n − rank = 6 − 3 = 3.'},
+  {q:'$W = \\{(x,y,z): x+y+z=0\\}$. Cơ sở và số chiều?',opts:['A. Chiều 2, cơ sở $\\{(1,-1,0),(1,0,-1)\\}$','B. Chiều 1','C. Chiều 3','D. Chiều 2, cơ sở $\\{(1,0,0),(0,1,0)\\}$'],ans:0,sol:'$x=-y-z$. Đặt $y=s, z=t$: $v = s(1,-1,0) + t(1,0,-1)$. Hai vectơ độc lập $\\Rightarrow \\dim=2$.'},
+  {q:'$A$ cấp $4 \\times 6$, $\\text{rank}(A)=3$. $\\dim(\\ker A)=?$',opts:['A. $3$','B. $4$','C. $1$','D. $2$'],ans:0,sol:'$\\dim(\\ker) = n - \\text{rank} = 6 - 3 = 3$.'},
 ],
 '2.2_VDC':[
-  {q:'V là không gian đa thức bậc ≤ 2. {1, x, x²} là:',opts:['A. Phụ thuộc','B. Cơ sở của V','C. Sinh nhưng không độc lập','D. Không sinh V'],ans:1,sol:'{1, x, x²} là cơ sở chuẩn của P₂, dim = 3.'},
-  {q:'W₁, W₂ là không gian con của V. dim(W₁+W₂) = ?',opts:['A. dim(W₁)+dim(W₂)','B. dim(W₁)+dim(W₂)−dim(W₁∩W₂)','C. max(dim W₁,dim W₂)','D. dim(W₁)·dim(W₂)'],ans:1,sol:'Công thức Grassmann: dim(W₁+W₂) = dim(W₁)+dim(W₂)−dim(W₁∩W₂).'},
+  {q:'$V$ là không gian đa thức bậc $\\leq 2$. $\\{1, x, x^2\\}$ là:',opts:['A. Phụ thuộc','B. Cơ sở của $V$','C. Sinh nhưng không độc lập','D. Không sinh $V$'],ans:1,sol:'$\\{1, x, x^2\\}$ là cơ sở chuẩn của $P_2$, $\\dim = 3$.'},
+  {q:'$W_1, W_2$ là không gian con của $V$. $\\dim(W_1+W_2) = ?$',opts:['A. $\\dim(W_1)+\\dim(W_2)$','B. $\\dim(W_1)+\\dim(W_2)-\\dim(W_1\\cap W_2)$','C. $\\max(\\dim W_1, \\dim W_2)$','D. $\\dim(W_1) \\cdot \\dim(W_2)$'],ans:1,sol:'Công thức Grassmann: $\\dim(W_1+W_2) = \\dim(W_1) + \\dim(W_2) - \\dim(W_1 \\cap W_2)$.'},
 ],
 '3.1_NB':[
-  {q:'Phương trình đặc trưng để tìm giá trị riêng λ là:',opts:['A. Ax=λx','B. det(A−λI)=0','C. A−λI=0','D. trace(A)=λ'],ans:1,sol:'Phương trình đặc trưng: det(A−λI) = 0.'},
-  {q:'Vectơ riêng ứng với λ của A thỏa:',opts:['A. Ax=0','B. Ax=λx, x≠0','C. det(A)=λ','D. A^T x=λx'],ans:1,sol:'Vectơ riêng: Ax = λx với x ≠ 0.'},
-  {q:'Tổng các giá trị riêng của A bằng:',opts:['A. det(A)','B. trace(A)','C. rank(A)','D. n'],ans:1,sol:'Tổng giá trị riêng = trace(A) = tổng phần tử đường chéo.'},
-  {q:'Tích các giá trị riêng của A bằng:',opts:['A. trace(A)','B. rank(A)','C. det(A)','D. n'],ans:2,sol:'Tích giá trị riêng = det(A).'},
-  {q:'Ma trận đối xứng thực A = A^T có giá trị riêng:',opts:['A. Luôn dương','B. Luôn âm','C. Luôn thực','D. Luôn nguyên'],ans:2,sol:'Định lý phổ thực: ma trận đối xứng thực có giá trị riêng thực.'},
-  {q:'Ánh xạ tuyến tính f: V→W bảo toàn:',opts:['A. Độ dài vectơ','B. Phép cộng và nhân vô hướng','C. Góc giữa các vectơ','D. Định thức'],ans:1,sol:'f(u+v)=f(u)+f(v) và f(λv)=λf(v).'},
+  {q:'Phương trình đặc trưng để tìm giá trị riêng $\\lambda$ là:',opts:['A. $Ax=\\lambda x$','B. $\\det(A-\\lambda I)=0$','C. $A-\\lambda I=0$','D. $\\text{trace}(A)=\\lambda$'],ans:1,sol:'Phương trình đặc trưng: $\\det(A-\\lambda I) = 0$.'},
+  {q:'Vectơ riêng ứng với $\\lambda$ của $A$ thỏa:',opts:['A. $Ax=0$','B. $Ax=\\lambda x$, $x \\neq 0$','C. $\\det(A)=\\lambda$','D. $A^T x=\\lambda x$'],ans:1,sol:'Vectơ riêng: $Ax = \\lambda x$ với $x \\neq 0$.'},
+  {q:'Tổng các giá trị riêng của $A$ bằng:',opts:['A. $\\det(A)$','B. $\\text{trace}(A)$','C. $\\text{rank}(A)$','D. $n$'],ans:1,sol:'Tổng giá trị riêng = $\\text{trace}(A)$ = tổng phần tử trên đường chéo chính.'},
+  {q:'Tích các giá trị riêng của $A$ bằng:',opts:['A. $\\text{trace}(A)$','B. $\\text{rank}(A)$','C. $\\det(A)$','D. $n$'],ans:2,sol:'Tích giá trị riêng = $\\det(A)$.'},
+  {q:'Ma trận đối xứng thực $A = A^T$ có giá trị riêng:',opts:['A. Luôn dương','B. Luôn âm','C. Luôn thực','D. Luôn nguyên'],ans:2,sol:'Định lý phổ thực: ma trận đối xứng thực luôn có giá trị riêng thực.'},
+  {q:'Ánh xạ tuyến tính $f: V \\to W$ bảo toàn:',opts:['A. Độ dài vectơ','B. Phép cộng và nhân vô hướng','C. Góc giữa các vectơ','D. Định thức'],ans:1,sol:'$f(u+v) = f(u)+f(v)$ và $f(\\lambda v) = \\lambda f(v)$.'},
 ],
 '3.1_TH':[
-  {q:'A = [[3,1],[0,3]] có giá trị riêng:',opts:['A. λ=3 (bội 2)','B. λ=0 và λ=3','C. λ=1 và λ=3','D. λ=±3'],ans:0,sol:'det(A−λI)=(3−λ)²=0 → λ=3 bội 2.'},
-  {q:'A = [[2,0],[0,3]]. Vectơ riêng ứng với λ=2 là:',opts:['A. (1,0)','B. (0,1)','C. (1,1)','D. (2,3)'],ans:0,sol:'(A−2I)x=0 → [[0,0],[0,1]]x=0 → x₂=0. Vectơ riêng: (1,0).'},
-  {q:'A chéo hóa được khi:',opts:['A. A đối xứng','B. A có n vectơ riêng độc lập','C. det(A)≠0','D. A là ma trận vuông'],ans:1,sol:'A chéo hóa được ⟺ có đủ n vectơ riêng độc lập tuyến tính.'},
-  {q:'Nếu A = PDP⁻¹ thì A² = ?',opts:['A. P²D²P⁻²','B. PD²P⁻¹','C. D²','D. P⁻¹D²P'],ans:1,sol:'A² = PDP⁻¹·PDP⁻¹ = PD²P⁻¹.'},
-  {q:'Vectơ riêng của I_n ứng với λ=1 là:',opts:['A. Chỉ e₁,...,eₙ','B. Mọi vectơ ≠ 0','C. Chỉ (1,...,1)','D. Không có'],ans:1,sol:'Ix=x=1·x với mọi x ≠ 0 nên mọi vectơ khác không đều là vectơ riêng.'},
-  {q:'Ma trận có giá trị riêng bằng 0 thì:',opts:['A. Khả nghịch','B. Là ma trận đơn vị','C. Suy biến (det=0)','D. Là đường chéo'],ans:2,sol:'Tích giá trị riêng = det. Nếu λ=0 là giá trị riêng → det=0 → suy biến.'},
+  {q:'$A = \\begin{bmatrix} 3 & 1 \\\\ 0 & 3 \\end{bmatrix}$ có giá trị riêng:',opts:['A. $\\lambda=3$ (bội 2)','B. $\\lambda=0$ và $\\lambda=3$','C. $\\lambda=1$ và $\\lambda=3$','D. $\\lambda=\\pm 3$'],ans:0,sol:'$\\det(A-\\lambda I) = (3-\\lambda)^2 = 0 \\Rightarrow \\lambda=3$ bội $2$.'},
+  {q:'$A = \\begin{bmatrix} 2 & 0 \\\\ 0 & 3 \\end{bmatrix}$. Vectơ riêng ứng với $\\lambda=2$ là:',opts:['A. $(1,0)$','B. $(0,1)$','C. $(1,1)$','D. $(2,3)$'],ans:0,sol:'$(A-2I)x = 0 \\Rightarrow \\begin{bmatrix} 0 & 0 \\\\ 0 & 1 \\end{bmatrix}x = 0 \\Rightarrow x_2=0$. Vectơ riêng: $(1,0)$.'},
+  {q:'$A$ chéo hóa được khi:',opts:['A. $A$ đối xứng','B. $A$ có $n$ vectơ riêng độc lập','C. $\\det(A) \\neq 0$','D. $A$ là ma trận vuông'],ans:1,sol:'$A$ chéo hóa được $\\Leftrightarrow$ có đủ $n$ vectơ riêng độc lập tuyến tính.'},
+  {q:'Nếu $A = PDP^{-1}$ thì $A^2 = ?$',opts:['A. $P^2 D^2 P^{-2}$','B. $P D^2 P^{-1}$','C. $D^2$','D. $P^{-1} D^2 P$'],ans:1,sol:'$A^2 = PDP^{-1} \\cdot PDP^{-1} = PD^2 P^{-1}$.'},
+  {q:'Vectơ riêng của $I_n$ ứng với $\\lambda=1$ là:',opts:['A. Chỉ $e_1,\\dots,e_n$','B. Mọi vectơ $\\neq 0$','C. Chỉ $(1,\\dots,1)$','D. Không có'],ans:1,sol:'$Ix = x = 1 \\cdot x$ với mọi $x \\neq 0$ nên mọi vectơ khác không đều là vectơ riêng.'},
+  {q:'Ma trận có giá trị riêng bằng $0$ thì:',opts:['A. Khả nghịch','B. Là ma trận đơn vị','C. Suy biến ($\\det=0$)','D. Là đường chéo'],ans:2,sol:'Tích giá trị riêng $= \\det$. Nếu $\\lambda=0$ là giá trị riêng $\\Rightarrow \\det=0 \\Rightarrow$ suy biến.'},
 ],
 '3.1_VD':[
-  {q:'Giá trị riêng của A = [[1,2],[2,1]]:',opts:['A. λ=1 và λ=2','B. λ=3 và λ=−1','C. λ=0 và λ=2','D. λ=±1'],ans:1,sol:'det(A−λI)=(1−λ)²−4=λ²−2λ−3=(λ−3)(λ+1)=0 → λ=3 và λ=−1.'},
-  {q:'A có λ₁=1, λ₂=2, λ₃=3. trace(A) và det(A) lần lượt là:',opts:['A. 6 và 6','B. 3 và 6','C. 6 và 3','D. 3 và 3'],ans:0,sol:'trace = 1+2+3 = 6, det = 1×2×3 = 6.'},
-  {q:'Ma trận trực giao P thỏa:',opts:['A. P^T = P','B. P^T = P⁻¹','C. P = P⁻¹','D. PP^T = 0'],ans:1,sol:'Ma trận trực giao: P^T = P⁻¹ ⟺ PP^T = I.'},
-  {q:'λ là giá trị riêng của A → λ² là giá trị riêng của:',opts:['A. 2A','B. A²','C. A^T','D. A⁻¹'],ans:1,sol:'Ax=λx → A²x=A(λx)=λ²x. Vậy λ² là giá trị riêng của A².'},
+  {q:'Giá trị riêng của $A = \\begin{bmatrix} 1 & 2 \\\\ 2 & 1 \\end{bmatrix}$:',opts:['A. $\\lambda=1$ và $\\lambda=2$','B. $\\lambda=3$ và $\\lambda=-1$','C. $\\lambda=0$ và $\\lambda=2$','D. $\\lambda=\\pm 1$'],ans:1,sol:'$\\det(A-\\lambda I) = (1-\\lambda)^2 - 4 = \\lambda^2 - 2\\lambda - 3 = (\\lambda-3)(\\lambda+1) = 0 \\Rightarrow \\lambda=3$ và $\\lambda=-1$.'},
+  {q:'$A$ có $\\lambda_1=1, \\lambda_2=2, \\lambda_3=3$. $\\text{trace}(A)$ và $\\det(A)$ lần lượt là:',opts:['A. $6$ và $6$','B. $3$ và $6$','C. $6$ và $3$','D. $3$ và $3$'],ans:0,sol:'$\\text{trace} = 1+2+3 = 6$, $\\det = 1 \\times 2 \\times 3 = 6$.'},
+  {q:'Ma trận trực giao $P$ thỏa:',opts:['A. $P^T = P$','B. $P^T = P^{-1}$','C. $P = P^{-1}$','D. $P P^T = 0$'],ans:1,sol:'Ma trận trực giao: $P^T = P^{-1} \\Leftrightarrow P P^T = I$.'},
+  {q:'$\\lambda$ là giá trị riêng của $A \\Rightarrow \\lambda^2$ là giá trị riêng của:',opts:['A. $2A$','B. $A^2$','C. $A^T$','D. $A^{-1}$'],ans:1,sol:'$Ax = \\lambda x \\Rightarrow A^2 x = A(\\lambda x) = \\lambda^2 x$. Vậy $\\lambda^2$ là giá trị riêng của $A^2$.'},
 ],
 '3.1_VDC':[
-  {q:'A = PBP⁻¹ (đồng dạng). Kết luận đúng:',opts:['A. A và B có cùng det, trace, giá trị riêng','B. A = B','C. Cả hai phải đối xứng','D. P phải trực giao'],ans:0,sol:'Đồng dạng bảo toàn: det, trace, giá trị riêng, đa thức đặc trưng, hạng.'},
-  {q:'A=[[0,−1],[1,0]] (quay 90°) có giá trị riêng trong ℂ:',opts:['A. ±1','B. ±i','C. 0','D. Không có'],ans:1,sol:'det(A−λI)=λ²+1=0 → λ=±i trong ℂ.'},
+  {q:'$A = PBP^{-1}$ ($A$ và $B$ đồng dạng). Kết luận đúng:',opts:['A. $A$ và $B$ có cùng $\\det$, $\\text{trace}$, giá trị riêng','B. $A = B$','C. Cả hai phải đối xứng','D. $P$ phải trực giao'],ans:0,sol:'Hai ma trận đồng dạng bảo toàn: định thức, vết (trace), giá trị riêng, đa thức đặc trưng, hạng.'},
+  {q:'$A = \\begin{bmatrix} 0 & -1 \\\\ 1 & 0 \\end{bmatrix}$ (phép quay $90^\\circ$) có giá trị riêng trong $\\mathbb{C}$:',opts:['A. $\\pm 1$','B. $\\pm i$','C. $0$','D. Không có'],ans:1,sol:'$\\det(A-\\lambda I) = \\lambda^2 + 1 = 0 \\Rightarrow \\lambda = \\pm i$ trong tập số phức $\\mathbb{C}$.'},
 ],
 '3.2_TH':[
-  {q:'Q(x)=x₁²+4x₁x₂+4x₂² viết dưới dạng bình phương:',opts:['A. (x₁+2x₂)²','B. (x₁+x₂)²','C. (x₁−2x₂)²','D. (2x₁+x₂)²'],ans:0,sol:'x₁²+4x₁x₂+4x₂² = (x₁+2x₂)².'},
-  {q:'Ma trận của dạng toàn phương Q=ax₁²+bx₁x₂+cx₂² là:',opts:['A. [[a,b],[b,c]]','B. [[a,b/2],[b/2,c]]','C. [[a,b],[0,c]]','D. [[a,0],[b,c]]'],ans:1,sol:'Ma trận dạng toàn phương phải đối xứng: A=[[a, b/2],[b/2, c]].'},
+  {q:'$Q(x) = x_1^2 + 4x_1 x_2 + 4x_2^2$ viết dưới dạng bình phương:',opts:['A. $(x_1 + 2x_2)^2$','B. $(x_1 + x_2)^2$','C. $(x_1 - 2x_2)^2$','D. $(2x_1 + x_2)^2$'],ans:0,sol:'$x_1^2 + 4x_1 x_2 + 4x_2^2 = (x_1 + 2x_2)^2$.'},
+  {q:'Ma trận của dạng toàn phương $Q = ax_1^2 + bx_1 x_2 + cx_2^2$ là:',opts:['A. $\\begin{bmatrix} a & b \\\\ b & c \\end{bmatrix}$','B. $\\begin{bmatrix} a & b/2 \\\\ b/2 & c \\end{bmatrix}$','C. $\\begin{bmatrix} a & b \\\\ 0 & c \\end{bmatrix}$','D. $\\begin{bmatrix} a & 0 \\\\ b & c \\end{bmatrix}$'],ans:1,sol:'Ma trận dạng toàn phương phải đối xứng: $A = \\begin{bmatrix} a & b/2 \\\\ b/2 & c \\end{bmatrix}$.'},
 ],
 '3.2_VD':[
-  {q:'Q=x²+2xy+2y². Loại dạng toàn phương (xét xác định dương)?',opts:['A. Xác định dương','B. Xác định âm','C. Bất định','D. Nửa xác định'],ans:0,sol:'A=[[1,1],[1,2]], det₁=1>0, det₂=2−1=1>0 → xác định dương (tiêu chuẩn Sylvester).'},
-  {q:'Dạng toàn phương xác định dương A có giá trị riêng:',opts:['A. Tất cả âm','B. Tất cả dương','C. Hỗn hợp','D. Bằng 0'],ans:1,sol:'Dạng toàn phương xác định dương ⟺ mọi giá trị riêng đều dương.'},
+  {q:'$Q = x^2 + 2xy + 2y^2$. Loại dạng toàn phương (xét xác định dương)?',opts:['A. Xác định dương','B. Xác định âm','C. Bất định','D. Nửa xác định'],ans:0,sol:'$A = \\begin{bmatrix} 1 & 1 \\\\ 1 & 2 \\end{bmatrix}$, $\\det_1 = 1 > 0$, $\\det_2 = 2 - 1 = 1 > 0 \\Rightarrow$ xác định dương (tiêu chuẩn Sylvester).'},
+  {q:'Dạng toàn phương xác định dương $A$ có giá trị riêng:',opts:['A. Tất cả âm','B. Tất cả dương','C. Hỗn hợp','D. Bằng $0$'],ans:1,sol:'Dạng toàn phương xác định dương $\\Leftrightarrow$ mọi giá trị riêng đều dương.'},
 ],
 };
 
@@ -535,6 +654,8 @@ function renderQ(){
   sol.textContent='💡 '+q.sol;
   sol.className='solution'+(ST.submitted?' show':'');
   renderQNav();
+
+  if (window.MathJax) { MathJax.typeset(); }
 }
 
 function renderQNav(){
@@ -551,7 +672,7 @@ function renderQNav(){
     } else if(ST.answers[i]!==null) btn.classList.add('answered');
     btn.onclick=()=>{ST.currentQ=i;renderQ();};
     nav.appendChild(btn);
-  });
+  }); 
 }
 
 function nextQ(){if(ST.currentQ<39){ST.currentQ++;renderQ();}}
@@ -690,6 +811,8 @@ function renderReview(){
   });
   document.getElementById('rv-solution').textContent='💡 '+q.sol;
   renderReviewNav();
+
+  if (window.MathJax) { MathJax.typeset(); }
 }
 
 function renderReviewNav(){
