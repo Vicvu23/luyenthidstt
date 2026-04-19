@@ -51,14 +51,47 @@ h3{font-size:16px;font-weight:600;margin-bottom:0.5rem}
 .timer{font-size:22px;font-weight:700;color:#1d4ed8;font-variant-numeric:tabular-nums}
 .timer.warn{color:#dc2626}
 .header-bar{background:#fff;border-bottom:1px solid #e0e0d8;padding:0.75rem 1rem;margin-bottom:1rem;border-radius:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+
+/* CSS CHO MÀN HÌNH ĐĂNG NHẬP */
+.login-container { max-width: 400px; margin: 4rem auto; text-align: center; }
+.input-group { margin-bottom: 1rem; text-align: left; }
+.input-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #444; }
+.input-control { width: 100%; padding: 12px 14px; border: 1px solid #d1d5db; border-radius: 8px; font-family: inherit; font-size: 14px; transition: border-color 0.2s; background: #fafaf5; }
+.input-control:focus { outline: none; border-color: #1d4ed8; box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.1); background: #fff; }
+.error-msg { color: #dc2626; font-size: 13px; margin-top: 8px; display: none; background: #fef2f2; padding: 8px; border-radius: 6px; border: 1px solid #fecaca; }
+.user-profile { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 10px 15px; border-radius: 12px; border: 1px solid #e0e0d8; margin-bottom: 1rem; }
 </style>
 </head>
 <body>
 <div class="app">
 
-<!-- HOME -->
-<div id="home" class="screen active">
-  <div style="text-align:center;padding:2rem 0 1.5rem">
+<div id="login" class="screen active">
+  <div class="login-container card">
+    <div style="font-size: 40px; margin-bottom: 10px;">🎓</div>
+    <h1 style="margin-bottom: 0.5rem">Đăng nhập hệ thống</h1>
+    <p class="muted" style="margin-bottom: 1.5rem">Luyện thi Đại số tuyến tính - KMA</p>
+    <form id="login-form" onsubmit="handleLogin(event)">
+      <div class="input-group">
+        <label for="username">Tên người dùng / Mã sinh viên</label>
+        <input type="text" id="username" class="input-control" placeholder="Nhập tên của bạn..." required autocomplete="off">
+      </div>
+      <div class="input-group">
+        <label for="password">Mật khẩu</label>
+        <input type="password" id="password" class="input-control" placeholder="Nhập bất kỳ để thử nghiệm..." required>
+      </div>
+      <p id="login-error" class="error-msg">Vui lòng nhập đầy đủ thông tin!</p>
+      <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem; padding: 12px; font-weight: 600; font-size: 15px;">Vào Luyện Thi</button>
+    </form>
+  </div>
+</div>
+
+<div id="home" class="screen">
+  <div class="user-profile">
+    <div style="font-weight: 600; font-size: 14px;">👋 Xin chào, <span id="user-name-display" style="color: #1d4ed8;">Học viên</span>!</div>
+    <button class="btn" style="padding: 6px 12px; font-size: 12px;" onclick="logout()">Đăng xuất</button>
+  </div>
+
+  <div style="text-align:center;padding:1rem 0 1.5rem">
     <h1>📐 Luyện thi Đại số tuyến tính</h1>
     <p class="muted" style="margin-top:8px">Đại học chính quy · 40 câu / đề · 60 phút · 10 đề luyện tập</p>
   </div>
@@ -93,7 +126,6 @@ h3{font-size:16px;font-weight:600;margin-bottom:0.5rem}
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px" id="exam-list"></div>
 </div>
 
-<!-- EXAM -->
 <div id="exam" class="screen">
   <div class="header-bar">
     <div>
@@ -129,7 +161,6 @@ h3{font-size:16px;font-weight:600;margin-bottom:0.5rem}
   </div>
 </div>
 
-<!-- RESULT -->
 <div id="result" class="screen">
   <div class="header-bar">
     <div>
@@ -163,7 +194,6 @@ h3{font-size:16px;font-weight:600;margin-bottom:0.5rem}
   </div>
 </div>
 
-<!-- REVIEW -->
 <div id="review" class="screen">
   <div class="header-bar">
     <h2 id="review-title" style="margin:0">Xem lại bài</h2>
@@ -189,6 +219,81 @@ h3{font-size:16px;font-weight:600;margin-bottom:0.5rem}
 </div>
 
 <script>
+// ==================== CHỨC NĂNG ĐĂNG NHẬP ====================
+window.onload = () => {
+  // Kiểm tra xem đã có thông tin user lưu trong trình duyệt chưa
+  const savedUser = localStorage.getItem('kma_ltdstt_user');
+  if (savedUser) {
+    document.getElementById('user-name-display').textContent = savedUser;
+    showScreen('home'); // Bỏ qua login, vào thẳng trang chủ
+  } else {
+    showScreen('login'); // Hiện form login
+  }
+};
+
+async function handleLogin(event) {
+  event.preventDefault(); // Ngăn trình duyệt tự động load lại trang khi submit form
+  
+  const usernameInput = document.getElementById('username').value.trim();
+  const passwordInput = document.getElementById('password').value;
+  const errorMsg = document.getElementById('login-error');
+
+  // Đổi text của nút thành Đang xử lý...
+  const submitBtn = event.target.querySelector('button[type="submit"]');
+  const originalBtnText = submitBtn.textContent;
+  submitBtn.textContent = 'Đang kiểm tra...';
+  submitBtn.disabled = true;
+
+  try {
+    // 1. Tải file users.json từ cùng thư mục trên GitHub
+    // Mẹo: Dùng url tương đối './users.json' để nó tự động nhận dạng link khi đẩy lên web
+    const response = await fetch('./users.json');
+    
+    if (!response.ok) {
+      throw new Error('Không tìm thấy cơ sở dữ liệu (users.json)');
+    }
+    
+    const data = await response.json();
+    
+    // 2. Tìm kiếm xem có tài khoản nào khớp với dữ liệu người dùng nhập không
+    const matchedUser = data.users.find(
+      user => user.username === usernameInput && user.password === passwordInput
+    );
+
+    if (matchedUser) {
+      // Đăng nhập thành công
+      localStorage.setItem('kma_ltdstt_user', matchedUser.username);
+      document.getElementById('user-name-display').textContent = matchedUser.username;
+      
+      document.getElementById('login-form').reset();
+      errorMsg.style.display = 'none';
+      showScreen('home');
+    } else {
+      // Sai tài khoản hoặc mật khẩu
+      errorMsg.textContent = 'Sai tên đăng nhập hoặc mật khẩu!';
+      errorMsg.style.display = 'block';
+    }
+  } catch (error) {
+    console.error("Lỗi:", error);
+    errorMsg.textContent = 'Lỗi hệ thống: Không thể kết nối đến cơ sở dữ liệu!';
+    errorMsg.style.display = 'block';
+  } finally {
+    // Khôi phục lại nút bấm
+    submitBtn.textContent = originalBtnText;
+    submitBtn.disabled = false;
+  }
+}
+
+function logout() {
+  if (confirm('Bạn có chắc chắn muốn đăng xuất không?')) {
+    // Xóa thông tin đã lưu
+    localStorage.removeItem('kma_ltdstt_user');
+    // Quay về màn hình login
+    showScreen('login');
+  }
+}
+// =============================================================
+
 const QB = {
 '1.1_NB':[
   {q:'Phần thực của số phức z = 3 − 5i là:',opts:['A. −5','B. 3','C. 5','D. −3'],ans:1,sol:'Số phức z = a + bi có phần thực là a. Với z = 3 − 5i thì a = 3.'},
