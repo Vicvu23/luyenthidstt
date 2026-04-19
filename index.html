@@ -581,7 +581,7 @@ function makeExam(seed){
   
   // 1. Nhặt đủ số lượng câu hỏi theo Ma trận (PLAN)
   PLAN.forEach(p=>{
-    const pool=(APP_DATA.questionBank[p.key]||[]).slice();
+    const pool=(QB[p.key]||[]).slice(); // Đã sửa thành QB
     pool.sort(()=>r()-0.5); // Trộn ngẫu nhiên trong nội bộ từng nhóm để lấy câu hỏi
     for(let i=0;i<Math.min(p.n,pool.length);i++){
       const q={...pool[i]};
@@ -593,10 +593,10 @@ function makeExam(seed){
   });
 
   // 2. Điền bù thêm cho đủ 40 câu (nếu ngân hàng thiếu)
-  while(qs.length<40 && Object.keys(APP_DATA.questionBank).length > 0){
-    const keys=Object.keys(APP_DATA.questionBank);
+  while(qs.length<40 && Object.keys(QB).length > 0){ // Đã sửa thành QB
+    const keys=Object.keys(QB); // Đã sửa thành QB
     const k=keys[Math.floor(r()*keys.length)];
-    const pool=APP_DATA.questionBank[k];
+    const pool=QB[k]; // Đã sửa thành QB
     if(pool && pool.length > 0) {
        const q={...pool[Math.floor(r()*pool.length)]};
        q.level=k.split('_')[1];
