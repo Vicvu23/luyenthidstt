@@ -377,13 +377,46 @@ function renderUserTable() {
     tbody.innerHTML += `
       <tr>
         <td><b>${user.username}</b></td>
-        <td>${user.password}</td>
+        <td>
+          <span id="pwd-${index}" data-hidden="true">••••••</span>
+          <button style="padding: 2px 6px; font-size: 14px; margin-left: 8px; border: none; background: transparent; cursor: pointer;" onclick="togglePassword(${index})" title="Xem mật khẩu">👁️</button>
+        </td>
         <td style="text-align: center;">
           ${user.username !== 'admin' ? `<button class="btn btn-danger" style="padding: 4px 8px; font-size: 12px;" onclick="deleteUser(${index})">Xóa</button>` : '<span class="muted">Gốc</span>'}
         </td>
       </tr>
     `;
   });
+}
+
+// Hàm mới: Xử lý ẩn/hiện mật khẩu có xác thực Admin
+function togglePassword(index) {
+  const pwdSpan = document.getElementById(`pwd-${index}`);
+  const isHidden = pwdSpan.getAttribute('data-hidden') === 'true';
+
+  if (isHidden) {
+    // 1. Yêu cầu nhập mật khẩu admin
+    const adminInput = prompt("🔒 Vui lòng nhập mật khẩu Admin để xem thông tin này:");
+    
+    // Nếu bấm Hủy thì không làm gì cả
+    if (adminInput === null) return; 
+
+    // 2. Kiểm tra mật khẩu có đúng với mật khẩu của tài khoản Admin đang đăng nhập không
+    const currentAdminUser = localStorage.getItem('kma_ltdstt_user');
+    const adminData = globalUsersList.find(u => u.username === currentAdminUser);
+
+    if (adminData && adminInput === adminData.password) {
+      // 3. Đúng mật khẩu -> Hiện mật khẩu của user đó
+      pwdSpan.textContent = globalUsersList[index].password;
+      pwdSpan.setAttribute('data-hidden', 'false');
+    } else {
+      alert("❌ Mật khẩu Admin không chính xác!");
+    }
+  } else {
+    // Đang hiện thì bấm vào sẽ ẩn đi (không cần hỏi lại mật khẩu)
+    pwdSpan.textContent = '••••••';
+    pwdSpan.setAttribute('data-hidden', 'true');
+  }
 }
 
 function addNewUser() {
