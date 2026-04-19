@@ -352,6 +352,7 @@ function logout() {
 }
 
 // === CHỨC NĂNG ADMIN ===
+// === CHỨC NĂNG ADMIN ===
 async function showAdmin() {
   showScreen('admin-screen');
   
@@ -367,7 +368,7 @@ async function showAdmin() {
     }
   }
   renderUserTable();
-  generateJSON();
+  maskJSONExport(); // Che JSON đi ngay khi vừa vào trang Admin
 }
 
 function renderUserTable() {
@@ -389,31 +390,24 @@ function renderUserTable() {
   });
 }
 
-// Hàm mới: Xử lý ẩn/hiện mật khẩu có xác thực Admin
 function togglePassword(index) {
   const pwdSpan = document.getElementById(`pwd-${index}`);
   const isHidden = pwdSpan.getAttribute('data-hidden') === 'true';
 
   if (isHidden) {
-    // 1. Yêu cầu nhập mật khẩu admin
     const adminInput = prompt("🔒 Vui lòng nhập mật khẩu Admin để xem thông tin này:");
-    
-    // Nếu bấm Hủy thì không làm gì cả
     if (adminInput === null) return; 
 
-    // 2. Kiểm tra mật khẩu có đúng với mật khẩu của tài khoản Admin đang đăng nhập không
     const currentAdminUser = localStorage.getItem('kma_ltdstt_user');
     const adminData = globalUsersList.find(u => u.username === currentAdminUser);
 
     if (adminData && adminInput === adminData.password) {
-      // 3. Đúng mật khẩu -> Hiện mật khẩu của user đó
       pwdSpan.textContent = globalUsersList[index].password;
       pwdSpan.setAttribute('data-hidden', 'false');
     } else {
       alert("❌ Mật khẩu Admin không chính xác!");
     }
   } else {
-    // Đang hiện thì bấm vào sẽ ẩn đi (không cần hỏi lại mật khẩu)
     pwdSpan.textContent = '••••••';
     pwdSpan.setAttribute('data-hidden', 'true');
   }
@@ -438,20 +432,39 @@ function addNewUser() {
   uInput.value = '';
   pInput.value = '';
   renderUserTable();
-  generateJSON();
+  maskJSONExport(); // Có thay đổi dữ liệu -> Khóa ngay khung JSON lại
+  alert("Đã thêm user thành công! Vui lòng bấm Cập nhật mã JSON và xác thực để lấy code mới.");
 }
 
 function deleteUser(index) {
   if (confirm(`Xóa tài khoản ${globalUsersList[index].username}?`)) {
     globalUsersList.splice(index, 1);
     renderUserTable();
-    generateJSON();
+    maskJSONExport(); // Có thay đổi dữ liệu -> Khóa ngay khung JSON lại
   }
 }
 
+// Hàm mới: Làm mờ khung JSON
+function maskJSONExport() {
+  document.getElementById('json-export').value = '*** DỮ LIỆU ĐÃ ĐƯỢC BẢO MẬT ***\n\nVui lòng bấm nút "Cập nhật đoạn mã JSON" và nhập mật khẩu Admin để trích xuất dữ liệu.';
+}
+
+// Hàm xuất JSON (Bắt buộc xác thực)
 function generateJSON() {
-  const output = { users: globalUsersList };
-  document.getElementById('json-export').value = JSON.stringify(output, null, 2);
+  const adminInput = prompt("🔒 Vui lòng nhập mật khẩu Admin để trích xuất toàn bộ dữ liệu:");
+  if (adminInput === null) return; 
+
+  const currentAdminUser = localStorage.getItem('kma_ltdstt_user');
+  const adminData = globalUsersList.find(u => u.username === currentAdminUser);
+
+  if (adminData && adminInput === adminData.password) {
+    const output = { users: globalUsersList };
+    document.getElementById('json-export').value = JSON.stringify(output, null, 2);
+    alert("✅ Trích xuất thành công! Hãy copy đoạn mã bên dưới.");
+  } else {
+    alert("❌ Mật khẩu Admin không chính xác!");
+    maskJSONExport();
+  }
 }
 // =============================================================
 
