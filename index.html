@@ -4,6 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Luyện thi Đại số tuyến tính</title>
+
+<script>
+  MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']]
+    }
+  };
+</script>
+  
 <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
 <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 <style>
@@ -569,30 +578,41 @@ function rng(seed){let s=seed;return function(){s=Math.imul(s^s>>>15,1|s);s^=s+M
 function makeExam(seed){
   const r=rng(seed);
   const qs=[];
+  
+  // 1. Nhặt đủ số lượng câu hỏi theo Ma trận (PLAN)
   PLAN.forEach(p=>{
-    const pool=(QB[p.key]||[]).slice();
-    pool.sort(()=>r()-0.5);
+    const pool=(APP_DATA.questionBank[p.key]||[]).slice();
+    pool.sort(()=>r()-0.5); // Trộn ngẫu nhiên trong nội bộ từng nhóm để lấy câu hỏi
     for(let i=0;i<Math.min(p.n,pool.length);i++){
       const q={...pool[i]};
       q.level=p.key.split('_')[1];
-      const prefix=p.key.split('_')[0].split('.').slice(0,2).join('.');
-      q.topic=TOPICS[prefix]||'';
+      q.topic=TOPICS[p.key.split('_')[0].split('.').slice(0,2).join('.')]||'';
       q.key=p.key;
       qs.push(q);
     }
   });
-  // fill to 40 if needed
-  while(qs.length<40){
-    const keys=Object.keys(QB);
+
+  // 2. Điền bù thêm cho đủ 40 câu (nếu ngân hàng thiếu)
+  while(qs.length<40 && Object.keys(APP_DATA.questionBank).length > 0){
+    const keys=Object.keys(APP_DATA.questionBank);
     const k=keys[Math.floor(r()*keys.length)];
-    const pool=QB[k];
-    const q={...pool[Math.floor(r()*pool.length)]};
-    q.level=k.split('_')[1];
-    q.topic=TOPICS[k.split('_')[0].split('.').slice(0,2).join('.')]||'';
-    q.key=k;
-    qs.push(q);
+    const pool=APP_DATA.questionBank[k];
+    if(pool && pool.length > 0) {
+       const q={...pool[Math.floor(r()*pool.length)]};
+       q.level=k.split('_')[1];
+       q.topic=TOPICS[k.split('_')[0].split('.').slice(0,2).join('.')]||'';
+       q.key=k;
+       qs.push(q);
+    }
   }
-  return qs.slice(0,40);
+
+  // 3. Cắt đúng 40 câu
+  const finalExam = qs.slice(0,40);
+
+  // 4. BƯỚC QUAN TRỌNG: Xáo trộn toàn bộ vị trí 40 câu hỏi này
+  finalExam.sort(() => r() - 0.5);
+
+  return finalExam;
 }
 
 let ST={examIdx:0,questions:[],answers:[],currentQ:0,timer:null,timeLeft:3600,submitted:false,reviewQ:0};
